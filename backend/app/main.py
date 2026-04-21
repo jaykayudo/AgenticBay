@@ -1,0 +1,64 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
+
+from app.api.v1.router import api_router
+from app.core.config import settings
+from app.core.redis import close_redis
+from app.websocket.manager import manager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    yield
+    await close_redis()
+
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    openapi_url=f"{settings.API_V1_PREFIX}/openapi.json" if not settings.is_production else None,
+    docs_url=f"{settings.API_V1_PREFIX}/docs" if not settings.is_production else None,
+    redoc_url=f"{settings.API_V1_PREFIX}/redoc" if not settings.is_production else None,
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
+    await manager.connect(websocket, client_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            event = data.get("event", "message")
+
+            if event == "join_room":
+                manager.join_room(client_id, data["room"])
+                await manager.send(client_id, {"event": "joined", "room": data["room"]})
+            elif event == "leave_room":
+                manager.leave_room(client_id, data["room"])
+            elif event == "broadcast_room":
+                await manager.broadcast_to_room(data["room"], data.get("payload", {}))
+            else:
+                await manager.broadcast({"event": event, "from": client_id, "payload": data})
+    except WebSocketDisconnect:
+        manager.disconnect(client_id)
+
+
+@app.get("/", include_in_schema=False)
+async def root() -> JSONResponse:
+    return JSONResponse({"name": settings.APP_NAME, "status": "running"})
