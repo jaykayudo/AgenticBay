@@ -18,6 +18,7 @@ async def _setup(db_session: AsyncSession):
 
 # ── create ────────────────────────────────────────────────────────────────────
 
+
 async def test_create_invoice_defaults_to_pending(db_session: AsyncSession) -> None:
     user, agent, sess, job = await _setup(db_session)
     invoice = await make_invoice(db_session, job.id, sess.id, user.id, agent.id)
@@ -28,10 +29,15 @@ async def test_create_invoice_defaults_to_pending(db_session: AsyncSession) -> N
 
 # ── get_by_onchain_id ─────────────────────────────────────────────────────────
 
+
 async def test_get_by_onchain_id_found(db_session: AsyncSession) -> None:
     user, agent, sess, job = await _setup(db_session)
     await make_invoice(
-        db_session, job.id, sess.id, user.id, agent.id,
+        db_session,
+        job.id,
+        sess.id,
+        user.id,
+        agent.id,
         onchain_invoice_id="0xABC123",
     )
     result = await InvoiceRepository(db_session).get_by_onchain_id("0xABC123")
@@ -45,6 +51,7 @@ async def test_get_by_onchain_id_not_found(db_session: AsyncSession) -> None:
 
 
 # ── get_by_session ────────────────────────────────────────────────────────────
+
 
 async def test_get_by_session_returns_invoices_for_that_session(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -69,6 +76,7 @@ async def test_get_by_session_empty(db_session: AsyncSession) -> None:
 
 # ── mark_paid ─────────────────────────────────────────────────────────────────
 
+
 async def test_mark_paid_sets_status_and_timestamp(db_session: AsyncSession) -> None:
     user, agent, sess, job = await _setup(db_session)
     invoice = await make_invoice(db_session, job.id, sess.id, user.id, agent.id)
@@ -83,9 +91,7 @@ async def test_mark_paid_records_tx_hash(db_session: AsyncSession) -> None:
     user, agent, sess, job = await _setup(db_session)
     invoice = await make_invoice(db_session, job.id, sess.id, user.id, agent.id)
 
-    updated = await InvoiceRepository(db_session).mark_paid(
-        invoice.id, payment_tx_hash="0xTXHASH"
-    )
+    updated = await InvoiceRepository(db_session).mark_paid(invoice.id, payment_tx_hash="0xTXHASH")
     assert updated is not None
     assert updated.payment_tx_hash == "0xTXHASH"
 
@@ -96,6 +102,7 @@ async def test_mark_paid_unknown_returns_none(db_session: AsyncSession) -> None:
 
 
 # ── mark_disbursed ────────────────────────────────────────────────────────────
+
 
 async def test_mark_disbursed_sets_status_and_timestamp(db_session: AsyncSession) -> None:
     user, agent, sess, job = await _setup(db_session)

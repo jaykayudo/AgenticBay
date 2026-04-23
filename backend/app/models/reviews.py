@@ -70,8 +70,7 @@ class Review(BaseModel):
 
     def __repr__(self) -> str:
         return (
-            f"<Review id={self.id} rating={self.rating}"
-            f" status={self.status} job_id={self.job_id}>"
+            f"<Review id={self.id} rating={self.rating} status={self.status} job_id={self.job_id}>"
         )
 
 

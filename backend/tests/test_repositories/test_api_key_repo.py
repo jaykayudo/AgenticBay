@@ -29,6 +29,7 @@ async def _create_key(db_session: AsyncSession, user_id: uuid.UUID, raw_key: str
 
 # ── create ────────────────────────────────────────────────────────────────────
 
+
 async def test_create_api_key(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     raw_key = _make_raw_key()
@@ -42,6 +43,7 @@ async def test_create_api_key(db_session: AsyncSession) -> None:
 
 
 # ── get_user_keys ─────────────────────────────────────────────────────────────
+
 
 async def test_get_user_keys_returns_active_by_default(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -82,6 +84,7 @@ async def test_get_user_keys_empty(db_session: AsyncSession) -> None:
 
 # ── revoke ────────────────────────────────────────────────────────────────────
 
+
 async def test_revoke_sets_inactive(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     key = await _create_key(db_session, user.id, _make_raw_key())
@@ -110,6 +113,7 @@ async def test_revoke_unknown_returns_none(db_session: AsyncSession) -> None:
 
 # ── validate_key ──────────────────────────────────────────────────────────────
 
+
 async def test_validate_key_success_returns_key(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     raw_key = _make_raw_key()
@@ -128,8 +132,8 @@ async def test_validate_key_updates_last_used_at(db_session: AsyncSession) -> No
 
     await ApiKeyRepository(db_session).validate_key(raw_key)
     # Re-fetch to confirm the DB value was written
-    from app.repositories.base import BaseRepository
     from app.models.api_keys import ApiKey
+
     refreshed = await db_session.get(ApiKey, key.id)
     assert refreshed is not None
     assert refreshed.last_used_at is not None

@@ -21,9 +21,7 @@ class BaseRepository(Generic[T]):
         return await self.session.get(self.model, id)
 
     async def get_all(self, *, limit: int = 100, offset: int = 0) -> list[T]:
-        result = await self.session.execute(
-            select(self.model).limit(limit).offset(offset)
-        )
+        result = await self.session.execute(select(self.model).limit(limit).offset(offset))
         return list(result.scalars().all())
 
     async def create(self, **kwargs: Any) -> T:

@@ -5,6 +5,7 @@ Each test that uses `db_session` gets a fresh SQLite in-memory database —
 tables are created before the test runs and the engine is disposed after,
 giving true per-test isolation at essentially zero cost.
 """
+
 import os
 
 # Must be set before any app module is imported so pydantic-settings can
@@ -22,33 +23,36 @@ import pytest
 # ── SQLite compatibility patches ───────────────────────────────────────────────
 # SQLite's type compiler doesn't know about PostgreSQL-specific types.
 # Patch it once here so `create_all` works without touching the production models.
-
 from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler  # noqa: E402
 
 
-def _sqlite_visit_JSONB(self, type_, **kw) -> str:  # type: ignore[no-untyped-def]
+def _sqlite_visit_JSONB(self, type_, **kw) -> str:  # type: ignore[no-untyped-def]  # noqa: N802
     return "JSON"
 
 
 SQLiteTypeCompiler.visit_JSONB = _sqlite_visit_JSONB  # type: ignore[attr-defined]
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (  # noqa: E402
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-from app.models.agents import Agent, AgentHostingType, AgentStatus
-from app.models.base import Base
-from app.models.invoices import Invoice, InvoiceStatus
-from app.models.jobs import Job, JobStatus
-from app.models.sessions import ConnectionType, Session, SessionPhase
-from app.models.users import User, UserRole, UserStatus
-from app.repositories.agent_repo import AgentRepository
-from app.repositories.invoice_repo import InvoiceRepository
-from app.repositories.job_repo import JobRepository
-from app.repositories.session_repo import SessionRepository
-from app.repositories.user_repo import UserRepository
-
+from app.models.agents import Agent, AgentHostingType, AgentStatus  # noqa: E402
+from app.models.base import Base  # noqa: E402
+from app.models.invoices import Invoice, InvoiceStatus  # noqa: E402
+from app.models.jobs import Job, JobStatus  # noqa: E402
+from app.models.sessions import ConnectionType, Session, SessionPhase  # noqa: E402
+from app.models.users import User, UserRole, UserStatus  # noqa: E402
+from app.repositories.agent_repo import AgentRepository  # noqa: E402
+from app.repositories.invoice_repo import InvoiceRepository  # noqa: E402
+from app.repositories.job_repo import JobRepository  # noqa: E402
+from app.repositories.session_repo import SessionRepository  # noqa: E402
+from app.repositories.user_repo import UserRepository  # noqa: E402
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Core session fixture — fresh in-memory DB per test
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 async def db_session() -> AsyncSession:
@@ -65,6 +69,7 @@ async def db_session() -> AsyncSession:
 # Entity factory helpers
 # Call these inside tests (not as fixtures) so each test controls its own data.
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 async def make_user(session: AsyncSession, **kwargs) -> User:
     defaults: dict = dict(

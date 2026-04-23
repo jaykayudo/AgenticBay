@@ -16,9 +16,7 @@ class UserRepository(BaseRepository[User]):
         return result.scalar_one_or_none()
 
     async def get_by_wallet_address(self, address: str) -> User | None:
-        result = await self.session.execute(
-            select(User).where(User.wallet_address == address)
-        )
+        result = await self.session.execute(select(User).where(User.wallet_address == address))
         return result.scalar_one_or_none()
 
     async def get_by_api_key(self, raw_key: str) -> User | None:

@@ -1,6 +1,5 @@
 import uuid
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_keys import ApiKeyEnvironment
@@ -21,6 +20,7 @@ except Exception:
 
 
 # ── create ────────────────────────────────────────────────────────────────────
+
 
 async def test_create_user(db_session: AsyncSession) -> None:
     repo = UserRepository(db_session)
@@ -48,6 +48,7 @@ async def test_create_sets_defaults(db_session: AsyncSession) -> None:
 
 # ── get_by_id ─────────────────────────────────────────────────────────────────
 
+
 async def test_get_by_id_returns_user(db_session: AsyncSession) -> None:
     created = await make_user(db_session, email="bob@example.com")
     repo = UserRepository(db_session)
@@ -64,6 +65,7 @@ async def test_get_by_id_unknown_returns_none(db_session: AsyncSession) -> None:
 
 # ── get_by_email ──────────────────────────────────────────────────────────────
 
+
 async def test_get_by_email_found(db_session: AsyncSession) -> None:
     await make_user(db_session, email="charlie@example.com")
     user = await UserRepository(db_session).get_by_email("charlie@example.com")
@@ -78,6 +80,7 @@ async def test_get_by_email_not_found(db_session: AsyncSession) -> None:
 
 # ── get_by_wallet_address ─────────────────────────────────────────────────────
 
+
 async def test_get_by_wallet_address_found(db_session: AsyncSession) -> None:
     await make_user(db_session, wallet_address="0xDEAD")
     user = await UserRepository(db_session).get_by_wallet_address("0xDEAD")
@@ -91,6 +94,7 @@ async def test_get_by_wallet_address_not_found(db_session: AsyncSession) -> None
 
 
 # ── update ────────────────────────────────────────────────────────────────────
+
 
 async def test_update_fields(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -108,6 +112,7 @@ async def test_update_unknown_returns_none(db_session: AsyncSession) -> None:
 
 # ── delete ────────────────────────────────────────────────────────────────────
 
+
 async def test_delete_removes_user(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     repo = UserRepository(db_session)
@@ -121,6 +126,7 @@ async def test_delete_unknown_returns_false(db_session: AsyncSession) -> None:
 
 # ── exists ────────────────────────────────────────────────────────────────────
 
+
 async def test_exists_true(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     assert await UserRepository(db_session).exists(user.id) is True
@@ -131,6 +137,7 @@ async def test_exists_false(db_session: AsyncSession) -> None:
 
 
 # ── get_all ───────────────────────────────────────────────────────────────────
+
 
 async def test_get_all_returns_all(db_session: AsyncSession) -> None:
     await make_user(db_session)
@@ -151,6 +158,7 @@ async def test_get_all_empty(db_session: AsyncSession) -> None:
 
 
 # ── get_by_api_key ────────────────────────────────────────────────────────────
+
 
 async def test_get_by_api_key_success(db_session: AsyncSession) -> None:
     user = await make_user(db_session)

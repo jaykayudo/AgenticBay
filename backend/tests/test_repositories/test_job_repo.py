@@ -6,8 +6,8 @@ from app.models.jobs import JobStatus
 from app.repositories.job_repo import JobRepository
 from tests.conftest import make_agent, make_job, make_session, make_user
 
-
 # ── create_job ────────────────────────────────────────────────────────────────
+
 
 async def test_create_job_sets_awaiting_invoice_status(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -38,6 +38,7 @@ async def test_create_job_with_raw_request(db_session: AsyncSession) -> None:
 
 # ── mark_completed ────────────────────────────────────────────────────────────
 
+
 async def test_mark_completed_sets_status_and_timestamp(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     agent = await make_agent(db_session, user.id)
@@ -56,6 +57,7 @@ async def test_mark_completed_unknown_returns_none(db_session: AsyncSession) -> 
 
 
 # ── get_by_session ────────────────────────────────────────────────────────────
+
 
 async def test_get_by_session_returns_correct_jobs(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -80,6 +82,7 @@ async def test_get_by_session_empty(db_session: AsyncSession) -> None:
 
 
 # ── get_by_buyer ──────────────────────────────────────────────────────────────
+
 
 async def test_get_by_buyer_returns_correct_jobs(db_session: AsyncSession) -> None:
     buyer1 = await make_user(db_session)

@@ -27,7 +27,9 @@ class AgentAnalytic(BaseModel):
     __tablename__ = "agent_analytics"
     __table_args__ = (
         UniqueConstraint(
-            "agent_id", "period", "period_start",
+            "agent_id",
+            "period",
+            "period_start",
             name="uq_agent_analytic_period",
         ),
     )
@@ -59,9 +61,7 @@ class AgentAnalytic(BaseModel):
     )
 
     # Quality
-    avg_rating: Mapped[Decimal | None] = mapped_column(
-        Numeric(precision=3, scale=2), nullable=True
-    )
+    avg_rating: Mapped[Decimal | None] = mapped_column(Numeric(precision=3, scale=2), nullable=True)
     avg_duration_sec: Mapped[Decimal | None] = mapped_column(
         Numeric(precision=10, scale=2), nullable=True
     )

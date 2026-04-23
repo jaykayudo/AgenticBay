@@ -20,9 +20,7 @@ class InvoiceRepository(BaseRepository[Invoice]):
         return result.scalar_one_or_none()
 
     async def get_by_session(self, session_id: uuid.UUID) -> list[Invoice]:
-        result = await self.session.execute(
-            select(Invoice).where(Invoice.session_id == session_id)
-        )
+        result = await self.session.execute(select(Invoice).where(Invoice.session_id == session_id))
         return list(result.scalars().all())
 
     async def mark_paid(

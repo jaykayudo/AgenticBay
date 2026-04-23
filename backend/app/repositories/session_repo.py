@@ -14,9 +14,7 @@ class SessionRepository(BaseRepository[Session]):
 
     async def get_active_sessions(self, *, limit: int = 100) -> list[Session]:
         result = await self.session.execute(
-            select(Session)
-            .where(Session.phase != SessionPhase.CLOSED)
-            .limit(limit)
+            select(Session).where(Session.phase != SessionPhase.CLOSED).limit(limit)
         )
         return list(result.scalars().all())
 
@@ -28,7 +26,5 @@ class SessionRepository(BaseRepository[Session]):
         )
 
     async def get_by_user(self, user_id: uuid.UUID) -> list[Session]:
-        result = await self.session.execute(
-            select(Session).where(Session.user_id == user_id)
-        )
+        result = await self.session.execute(select(Session).where(Session.user_id == user_id))
         return list(result.scalars().all())

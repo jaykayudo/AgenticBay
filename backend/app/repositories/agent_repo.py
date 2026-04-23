@@ -19,17 +19,12 @@ class AgentRepository(BaseRepository[Agent]):
 
     async def get_active_agents(self, *, limit: int = 100, offset: int = 0) -> list[Agent]:
         result = await self.session.execute(
-            select(Agent)
-            .where(Agent.status == AgentStatus.ACTIVE)
-            .limit(limit)
-            .offset(offset)
+            select(Agent).where(Agent.status == AgentStatus.ACTIVE).limit(limit).offset(offset)
         )
         return list(result.scalars().all())
 
     async def get_by_owner(self, owner_id: uuid.UUID) -> list[Agent]:
-        result = await self.session.execute(
-            select(Agent).where(Agent.owner_id == owner_id)
-        )
+        result = await self.session.execute(select(Agent).where(Agent.owner_id == owner_id))
         return list(result.scalars().all())
 
     async def update_stats(

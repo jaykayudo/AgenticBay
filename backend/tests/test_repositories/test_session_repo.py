@@ -6,8 +6,8 @@ from app.models.sessions import SessionPhase
 from app.repositories.session_repo import SessionRepository
 from tests.conftest import make_session, make_user
 
-
 # ── create ────────────────────────────────────────────────────────────────────
+
 
 async def test_create_session(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -18,6 +18,7 @@ async def test_create_session(db_session: AsyncSession) -> None:
 
 
 # ── get_active_sessions ───────────────────────────────────────────────────────
+
 
 async def test_get_active_sessions_excludes_closed(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -52,6 +53,7 @@ async def test_get_active_sessions_respects_limit(db_session: AsyncSession) -> N
 
 # ── mark_closed ───────────────────────────────────────────────────────────────
 
+
 async def test_mark_closed_sets_phase_and_timestamp(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     sess = await make_session(db_session, user.id, phase=SessionPhase.ACTIVE)
@@ -68,6 +70,7 @@ async def test_mark_closed_unknown_returns_none(db_session: AsyncSession) -> Non
 
 
 # ── get_by_user ───────────────────────────────────────────────────────────────
+
 
 async def test_get_by_user_returns_only_that_users_sessions(db_session: AsyncSession) -> None:
     user1 = await make_user(db_session)

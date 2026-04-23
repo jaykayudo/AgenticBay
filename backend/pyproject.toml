@@ -28,6 +28,7 @@ dependencies = [
     "anthropic>=0.96.0",
     "voyageai>=0.3.7",
     "jwt>=1.4.0",
+    "aiosqlite>=0.22.1",
 ]
 
 [project.optional-dependencies]

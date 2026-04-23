@@ -39,13 +39,9 @@ class JobRepository(BaseRepository[Job]):
         )
 
     async def get_by_session(self, session_id: uuid.UUID) -> list[Job]:
-        result = await self.session.execute(
-            select(Job).where(Job.session_id == session_id)
-        )
+        result = await self.session.execute(select(Job).where(Job.session_id == session_id))
         return list(result.scalars().all())
 
     async def get_by_buyer(self, buyer_id: uuid.UUID) -> list[Job]:
-        result = await self.session.execute(
-            select(Job).where(Job.buyer_id == buyer_id)
-        )
+        result = await self.session.execute(select(Job).where(Job.buyer_id == buyer_id))
         return list(result.scalars().all())

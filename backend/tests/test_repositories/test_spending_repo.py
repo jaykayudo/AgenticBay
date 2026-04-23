@@ -1,6 +1,7 @@
 import uuid
 from decimal import Decimal
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.spending_repo import AgentSpendingRepository
@@ -18,6 +19,7 @@ async def _setup(db_session: AsyncSession):
 
 
 # ── log_spend ─────────────────────────────────────────────────────────────────
+
 
 async def test_log_spend_creates_record(db_session: AsyncSession) -> None:
     user, master_agent, sess, job, invoice = await _setup(db_session)
@@ -53,6 +55,7 @@ async def test_log_spend_without_description(db_session: AsyncSession) -> None:
 
 
 # ── get_total_spent_in_job ────────────────────────────────────────────────────
+
 
 async def test_get_total_spent_no_records_returns_zero(db_session: AsyncSession) -> None:
     total = await AgentSpendingRepository(db_session).get_total_spent_in_job(uuid.uuid4())
@@ -114,6 +117,3 @@ async def test_get_total_spent_filtered_by_master_agent(db_session: AsyncSession
     total_master2 = await repo.get_total_spent_in_job(job.id, master_agent_id=master2.id)
     assert float(total_master1) == pytest.approx(10.0)
     assert float(total_master2) == pytest.approx(20.0)
-
-
-import pytest

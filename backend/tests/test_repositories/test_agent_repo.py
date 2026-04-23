@@ -1,14 +1,15 @@
 import uuid
 from decimal import Decimal
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.agents import AgentStatus
 from app.repositories.agent_repo import AgentRepository
 from tests.conftest import make_agent, make_user
 
-
 # ── create ────────────────────────────────────────────────────────────────────
+
 
 async def test_create_agent_generates_orchestrator_key(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -28,6 +29,7 @@ async def test_create_two_agents_have_unique_keys(db_session: AsyncSession) -> N
 
 # ── get_by_slug ───────────────────────────────────────────────────────────────
 
+
 async def test_get_by_slug_found(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     await make_agent(db_session, user.id, slug="my-slug")
@@ -42,6 +44,7 @@ async def test_get_by_slug_not_found(db_session: AsyncSession) -> None:
 
 
 # ── get_active_agents ─────────────────────────────────────────────────────────
+
 
 async def test_get_active_agents_returns_only_active(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -70,6 +73,7 @@ async def test_get_active_agents_respects_limit(db_session: AsyncSession) -> Non
 
 # ── get_by_owner ──────────────────────────────────────────────────────────────
 
+
 async def test_get_by_owner_returns_owned_agents(db_session: AsyncSession) -> None:
     owner1 = await make_user(db_session)
     owner2 = await make_user(db_session)
@@ -88,6 +92,7 @@ async def test_get_by_owner_no_agents(db_session: AsyncSession) -> None:
 
 
 # ── update_stats ──────────────────────────────────────────────────────────────
+
 
 async def test_update_stats_fields(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
@@ -121,12 +126,10 @@ async def test_update_stats_unknown_returns_none(db_session: AsyncSession) -> No
 
 # ── base repo methods ─────────────────────────────────────────────────────────
 
+
 async def test_delete_agent(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     agent = await make_agent(db_session, user.id)
     repo = AgentRepository(db_session)
     assert await repo.delete(agent.id) is True
     assert await repo.get_by_id(agent.id) is None
-
-
-import pytest
