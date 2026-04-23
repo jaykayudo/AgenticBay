@@ -10,7 +10,14 @@ class Base(DeclarativeBase):
     pass
 
 
-class TimestampMixin:
+class BaseModel(Base):
+    __abstract__ = True
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -22,16 +29,3 @@ class TimestampMixin:
         onupdate=func.now(),
         nullable=False,
     )
-
-
-class UUIDMixin:
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True,
-    )
-
-
-class BaseModel(UUIDMixin, TimestampMixin, Base):
-    __abstract__ = True
