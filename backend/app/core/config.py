@@ -49,12 +49,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    
+
     # Web3
-    RPC_URL=""
-    INVOICE_CONTRACT_ADDRESS = ""
-    INVOICE_CONTRACT_ABI=""
-    ORCHESTRATOR_PRIVATE_KEY=""
+    RPC_URL: str = ""
+    INVOICE_CONTRACT_ADDRESS: str = ""
+    INVOICE_CONTRACT_ABI: str = ""
+    ORCHESTRATOR_PRIVATE_KEY: str = ""
 
     @property
     def is_production(self) -> bool:
