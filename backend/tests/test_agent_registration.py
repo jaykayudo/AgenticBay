@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, cast
 from uuid import uuid4
 
@@ -60,7 +60,7 @@ def override_dependencies() -> None:
 
 
 def build_registered_agent() -> RegisteredAgentRead:
-    now = datetime.now(datetime.UTC)
+    now = datetime.now(UTC)
     return RegisteredAgentRead(
         id=uuid4(),
         agent_id=REMOTE_MANIFEST["agentId"],
