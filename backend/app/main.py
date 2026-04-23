@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.database import close_asyncpg_pool
 from app.core.redis import close_redis
 from app.websocket.manager import manager
 
@@ -16,6 +17,7 @@ from app.websocket.manager import manager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
     await close_redis()
+    await close_asyncpg_pool()
 
 
 app = FastAPI(
