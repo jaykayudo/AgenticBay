@@ -115,11 +115,11 @@ class OrchestratorAgent:
 
         # Dispatch to handler
         handlers: dict[str, Any] = {
-            "SEARCH_AGENT":       self._handle_search,
-            "CONNECT_AGENT":      self._handle_connect,
-            "SERVICE_AGENT":      self._handle_service_request,
+            "SEARCH_AGENT": self._handle_search,
+            "CONNECT_AGENT": self._handle_connect,
+            "SERVICE_AGENT": self._handle_service_request,
             "PAYMENT_SUCCESSFUL": self._handle_payment_successful,
-            "CLOSE":              self._handle_close,
+            "CLOSE": self._handle_close,
         }
 
         handler = handlers.get(message.type)
@@ -268,12 +268,12 @@ class OrchestratorAgent:
             return
 
         # Update session state
-        state.connected_agent_id     = agent_id
-        state.agent_endpoint         = agent.base_url
-        state.agent_wallet_address   = agent.wallet_address
-        state.agent_capabilities     = capabilities
+        state.connected_agent_id = agent_id
+        state.agent_endpoint = agent.base_url
+        state.agent_wallet_address = agent.wallet_address
+        state.agent_capabilities = capabilities
         state.agent_orchestrator_key = agent.orchestrator_api_key
-        state.phase                  = SessionPhase.ACTIVE
+        state.phase = SessionPhase.ACTIVE
         await self.session_store.save(state)
 
         # Tell service agent to dial into our WS room
@@ -482,9 +482,7 @@ class OrchestratorAgent:
         # Use LLM to find the correct payment_confirmed command
         # from the capability document, then notify service agent over WS
         capabilities = state.agent_capabilities or ""
-        payment_command = await self.llm.find_payment_success_command(
-            capabilities=capabilities
-        )
+        payment_command = await self.llm.find_payment_success_command(capabilities=capabilities)
 
         await self._send_to_service(
             state.session_id,
