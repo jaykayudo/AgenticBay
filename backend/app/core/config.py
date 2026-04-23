@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Orchestrator
+    ORCHESTRATOR_WS_URL: str = "ws://localhost:8000"
+
     # Web3
     RPC_URL: str = ""
     INVOICE_CONTRACT_ADDRESS: str = ""
