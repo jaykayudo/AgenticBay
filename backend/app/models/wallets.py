@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import enum
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,7 +14,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel
 
 if TYPE_CHECKING:
+    from app.models.invoices import Invoice
     from app.models.users import User
+
+
+class EscrowWalletStatus(enum.StrEnum):
+    AVAILABLE = "AVAILABLE"  # empty, ready to be assigned
+    LOCKED = "LOCKED"  # assigned to an active invoice
+    DRAINING = "DRAINING"  # currently being emptied
+    MAINTENANCE = "MAINTENANCE"  # removed from pool manually
 
 
 class TransactionType(enum.StrEnum):
@@ -34,30 +43,45 @@ class TransactionStatus(enum.StrEnum):
 
 
 class EscrowWallet(BaseModel):
-    """Circle-managed escrow wallet pool entry. One row per wallet in the pool."""
+    """Circle-managed escrow wallet pool. One row per wallet in the pool."""
 
     __tablename__ = "escrow_wallets"
 
     circle_wallet_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    circle_wallet_set_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     wallet_address: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    blockchain: Mapped[str] = mapped_column(String(50), default="ARB-SEPOLIA", nullable=False)
 
-    # Locked while a job is in progress; released on CLOSE or refund
-    is_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-
-    locked_by_job_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("jobs.id", ondelete="SET NULL"),
-        nullable=True,
+    status: Mapped[EscrowWalletStatus] = mapped_column(
+        SAEnum(EscrowWalletStatus, name="escrow_wallet_status", create_type=True),
+        default=EscrowWalletStatus.AVAILABLE,
+        nullable=False,
         index=True,
     )
 
-    # Last known balance in USDC (synced via Circle webhook)
-    balance: Mapped[Decimal] = mapped_column(
-        Numeric(precision=20, scale=6), default=Decimal("0"), nullable=False
+    # UUID of the Invoice this wallet is locked to (no FK — avoids circular reference)
+    locked_invoice_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
+
+    current_balance: Mapped[Decimal] = mapped_column(
+        Numeric(precision=18, scale=6), default=Decimal("0"), nullable=False
+    )
+    last_balance_check_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    total_lifetime_volume: Mapped[Decimal] = mapped_column(
+        Numeric(precision=18, scale=6), default=Decimal("0"), nullable=False
+    )
+    times_used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Back-reference: all invoices that have used this wallet
+    invoices: Mapped[list[Invoice]] = relationship(
+        "Invoice", foreign_keys="[Invoice.escrow_wallet_id]", back_populates="escrow_wallet"
     )
 
     def __repr__(self) -> str:
-        return f"<EscrowWallet id={self.id} address={self.wallet_address} locked={self.is_locked}>"
+        return f"<EscrowWallet id={self.id} address={self.wallet_address} status={self.status}>"
 
 
 class WalletTransaction(BaseModel):
@@ -77,8 +101,7 @@ class WalletTransaction(BaseModel):
         nullable=False,
     )
 
-    # Amount in USDC with 6 decimal places
-    amount: Mapped[Decimal] = mapped_column(Numeric(precision=20, scale=6), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(precision=18, scale=6), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="USDC", nullable=False)
 
     status: Mapped[TransactionStatus] = mapped_column(
@@ -87,23 +110,16 @@ class WalletTransaction(BaseModel):
         nullable=False,
     )
 
-    # Circle transfer ID (present for Circle-initiated transfers)
     circle_transfer_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
-
-    # On-chain transaction hash (present for blockchain transactions)
     onchain_tx_hash: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
-
     from_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     to_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Arbitrary context (job_id, invoice_id, agent_id, etc.)
-    # Named tx_metadata to avoid conflict with SQLAlchemy's reserved Base.metadata
     tx_metadata: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, default=dict, server_default="{}", nullable=False
     )
 
-    # Relationships
     user: Mapped[User] = relationship("User", back_populates="wallet_transactions")
 
     def __repr__(self) -> str:
@@ -113,4 +129,10 @@ class WalletTransaction(BaseModel):
         )
 
 
-__all__ = ["EscrowWallet", "WalletTransaction", "TransactionType", "TransactionStatus"]
+__all__ = [
+    "EscrowWallet",
+    "EscrowWalletStatus",
+    "WalletTransaction",
+    "TransactionType",
+    "TransactionStatus",
+]

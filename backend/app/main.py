@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -15,9 +18,25 @@ from app.websocket.orchestrator import router as ws_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    yield
-    await close_redis()
-    await close_asyncpg_pool()
+    from app.tasks.invoice_tasks import (
+        expire_unpaid_invoices_task,
+        reconcile_locked_wallets_task,
+        sync_wallet_balances_task,
+    )
+
+    tasks = [
+        asyncio.create_task(expire_unpaid_invoices_task()),
+        asyncio.create_task(sync_wallet_balances_task()),
+        asyncio.create_task(reconcile_locked_wallets_task()),
+    ]
+    try:
+        yield
+    finally:
+        for t in tasks:
+            t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await close_redis()
+        await close_asyncpg_pool()
 
 
 app = FastAPI(
