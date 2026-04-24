@@ -18,7 +18,6 @@ from app.agents.orchestrator.schema import (
     ConnectAgentRequest,
     ConnectResponse,
     ConnectResponseData,
-    ContractData,
     ErrorResponse,
     ErrorResponseData,
     # session
@@ -709,11 +708,10 @@ class OrchestratorAgent:
                         description=(
                             f"Escrow deposit for {state.marketplace_action_name or 'marketplace job'}"
                         ),
-                        contract_data=ContractData(
+                        payment_info=PaymentInfo(
                             invoice_id=invoice_id,
-                            invoice_contract=settings.INVOICE_CONTRACT_ADDRESS
-                            or "0xDEMOESCROW0000000000000000000000000000",
-                            function_name="payInvoice",
+                            invoice_wallet="0xDEMOESCROW0000000000000000000000000000",
+                            blockchain="ARC-TESTNET",
                         ),
                     ),
                 ).to_text(),

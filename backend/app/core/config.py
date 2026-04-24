@@ -76,6 +76,7 @@ class Settings(BaseSettings):
 
     MARKETPLACE_FEE_PERCENT: float = 5.0
     BLOCKCHAIN: str = "ARC-TESTNET"
+    INVOICE_CONTRACT_ADDRESS: str = ""
 
     # HMAC-SHA256 secret used to verify inbound Circle webhook signatures
     CIRCLE_WEBHOOK_SECRET: str = ""

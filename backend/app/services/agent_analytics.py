@@ -145,21 +145,21 @@ class AgentAnalyticsService:
         avg_job_value = round((total_earned / total_jobs), 2) if total_jobs else 0.0
 
         return AgentAnalyticsResponse(
-            agent_id=profile.id,
-            agent_name=profile.name,
-            owner_name=profile.owner_name,
+            agentId=profile.id,
+            agentName=profile.name,
+            ownerName=profile.owner_name,
             range=range_key,
-            generated_at=self.now,
+            generatedAt=self.now,
             summary=AgentSummaryMetrics(
-                total_jobs=total_jobs,
-                total_earned=total_earned,
-                success_rate=success_rate,
-                avg_job_value=avg_job_value,
+                totalJobs=total_jobs,
+                totalEarned=total_earned,
+                successRate=success_rate,
+                avgJobValue=avg_job_value,
             ),
-            revenue_series=revenue_series,
-            action_breakdown=action_breakdown,
+            revenueSeries=revenue_series,
+            actionBreakdown=action_breakdown,
             reviews=reviews,
-            response_time_distribution=response_distribution,
+            responseTimeDistribution=response_distribution,
         )
 
     def _build_job_records(self) -> tuple[JobRecord, ...]:
@@ -490,12 +490,12 @@ class AgentAnalyticsService:
         return [
             AgentReviewItem(
                 id=job.id,
-                reviewer_name=job.review.reviewer_name,
+                reviewerName=job.review.reviewer_name,
                 company=job.review.company,
                 rating=job.review.rating,
                 comment=job.review.comment,
-                job_title=job.title,
-                created_at=job.completed_at,
+                jobTitle=job.title,
+                createdAt=job.completed_at,
             )
             for job in latest_reviews
             if job.review is not None
@@ -528,7 +528,7 @@ class AgentAnalyticsService:
                     label=band.label,
                     count=len(band_jobs),
                     percentage=percentages[index],
-                    average_minutes=average_minutes,
+                    averageMinutes=average_minutes,
                 )
             )
 

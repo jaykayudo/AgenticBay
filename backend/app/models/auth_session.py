@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel
 
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.models.users import User
 
 
 class AuthSession(BaseModel):

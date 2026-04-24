@@ -111,13 +111,13 @@ class AgentRegistryService:
     def serialize(self, record: RegisteredAgent) -> RegisteredAgentRead:
         return RegisteredAgentRead(
             id=record.id,
-            agent_id=record.external_agent_id,
+            agentId=record.external_agent_id,
             name=record.name,
             description=record.description,
             version=record.version,
-            base_url=record.base_url,
+            baseUrl=record.base_url,
             manifest=AgentManifest.model_validate(record.manifest),
-            is_active=record.is_active,
-            created_at=record.created_at,
-            updated_at=record.updated_at,
+            isActive=record.is_active,
+            createdAt=record.created_at,
+            updatedAt=record.updated_at,
         )

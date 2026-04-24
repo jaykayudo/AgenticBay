@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from math import floor
+from typing import cast
 from uuid import uuid4
 
 from jose import jwt
@@ -592,7 +593,7 @@ class MarketplacePublicService:
             "iat": int(issued_at.timestamp()),
             "exp": int(expires_at.timestamp()),
         }
-        return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+        return cast(str, jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM))
 
     def _format_minutes(self, minutes: int) -> str:
         if minutes < 60:

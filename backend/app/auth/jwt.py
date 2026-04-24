@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Literal
+from typing import Literal, cast
 from uuid import UUID
 
 from jose import ExpiredSignatureError, JWTError, jwt
@@ -52,7 +52,7 @@ def create_access_token(
         "exp": int(expires_at.timestamp()),
         "sid": str(session_id),
     }
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return cast(str, jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM))
 
 
 def decode_access_token(token: str) -> AccessTokenPayload:

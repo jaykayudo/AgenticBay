@@ -4,6 +4,7 @@ import hashlib
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, select
@@ -13,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.jwt import create_access_token
 from app.core.config import settings
 from app.models.auth_session import AuthSession
-from app.models.user import User
+from app.models.users import User
 
 
 class SessionManagerError(Exception):
@@ -215,7 +216,7 @@ class SessionManager:
         )
         if for_update:
             statement = statement.with_for_update()
-        return await self.db.scalar(statement)
+        return cast(AuthSession | None, await self.db.scalar(statement))
 
     @staticmethod
     def _revoke_session(session: AuthSession, *, reason: str, revoked_at: datetime) -> None:

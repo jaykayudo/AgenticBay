@@ -434,51 +434,52 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
     }
 
     initializedRef.current = true;
-    setSessionStatus(session.status);
-    setAmountLockedUsdc(session.amountLockedUsdc);
-    setResultPayload(session.resultPayload);
-    appendFeed({
-      kind: "system",
-      type: "SESSION_OPENED",
-      title: "Session opened",
-      body: `Connected to ${session.agentName} for ${session.actionName}.`,
-      payload: {
-        inputSummary: session.inputSummary,
-        mode: session.mode,
-      },
-    });
-
-    if (session.status === "awaiting_payment") {
-      const invoiceId = `mock-invoice-${session.sessionId.slice(0, 8)}`;
-      setActivePaymentId(invoiceId);
+    queueMicrotask(() => {
+      setSessionStatus(session.status);
+      setAmountLockedUsdc(session.amountLockedUsdc);
+      setResultPayload(session.resultPayload);
       appendFeed({
-        kind: "payment",
-        type: "PAYMENT",
-        title: "Escrow payment requested",
-        body: `Escrow deposit for ${session.actionName}.`,
+        kind: "system",
+        type: "SESSION_OPENED",
+        title: "Session opened",
+        body: `Connected to ${session.agentName} for ${session.actionName}.`,
         payload: {
-          amount: session.priceUsdc,
-          description: `Escrow deposit for ${session.actionName}`,
-        },
-        payment: {
-          amount: session.priceUsdc,
-          description: `Escrow deposit for ${session.actionName}`,
-          invoiceId,
-          contractAddress: "0xDEMOESCROW0000000000000000000000000000",
-          functionName: "payInvoice",
+          inputSummary: session.inputSummary,
+          mode: session.mode,
         },
       });
-    }
 
-    if (session.status === "completed" && session.resultPayload) {
-      appendFeed({
-        kind: "result",
-        type: "CLOSE_APPEAL",
-        title: "Job completed",
-        body: `${session.actionName} completed for ${session.agentName}.`,
-        payload: session.resultPayload,
-      });
-    }
+      if (session.status === "awaiting_payment") {
+        const invoiceId = `mock-invoice-${session.sessionId.slice(0, 8)}`;
+        appendFeed({
+          kind: "payment",
+          type: "PAYMENT",
+          title: "Escrow payment requested",
+          body: `Escrow deposit for ${session.actionName}.`,
+          payload: {
+            amount: session.priceUsdc,
+            description: `Escrow deposit for ${session.actionName}`,
+          },
+          payment: {
+            amount: session.priceUsdc,
+            description: `Escrow deposit for ${session.actionName}`,
+            invoiceId,
+            contractAddress: "0xDEMOESCROW0000000000000000000000000000",
+            functionName: "payInvoice",
+          },
+        });
+      }
+
+      if (session.status === "completed" && session.resultPayload) {
+        appendFeed({
+          kind: "result",
+          type: "CLOSE_APPEAL",
+          title: "Job completed",
+          body: `${session.actionName} completed for ${session.agentName}.`,
+          payload: session.resultPayload,
+        });
+      }
+    });
   }, [session]);
 
   useEffect(() => {
@@ -491,8 +492,10 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
 
     if (session.socketUrl.startsWith("mock://")) {
       clearMockTimers();
-      setConnectionState("connecting");
-      appendLog("Using mocked marketplace session data.");
+      queueMockTimer(0, () => {
+        setConnectionState("connecting");
+        appendLog("Using mocked marketplace session data.");
+      });
 
       queueMockTimer(180, () => {
         if (disposed) {

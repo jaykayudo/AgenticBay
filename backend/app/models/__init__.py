@@ -1,7 +1,8 @@
 from app.models.agents import Agent, AgentAction, AgentHostingType, AgentStatus
 from app.models.analytics import AgentAnalytic, AnalyticPeriod
 from app.models.api_keys import ApiKey, ApiKeyEnvironment
-from app.models.auth import AuthProviderType, AuthSession, UserAuthProvider
+from app.models.auth import AuthProviderType, UserAuthProvider
+from app.models.auth_session import AuthSession
 from app.models.base import Base, BaseModel
 from app.models.invoices import Invoice, InvoiceStatus
 from app.models.jobs import Job, JobStatus
@@ -31,8 +32,6 @@ __all__ = [
     "BaseModel",
     # Users
     "User",
-    "UserRole",
-    "UserStatus",
     # Auth
     "AuthProviderType",
     "UserAuthProvider",

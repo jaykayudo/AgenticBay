@@ -11,7 +11,7 @@ from app.auth.otp_store import OTPStore, generate_otp_code, normalize_email
 from app.auth.rate_limiter import OTPSendRateLimiter
 from app.auth.session_manager import IssuedTokenPair, SessionManager
 from app.core.config import settings
-from app.models.user import User
+from app.models.users import User
 
 logger = logging.getLogger(__name__)
 

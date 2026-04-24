@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useState } from "react";
 
 import { useApiMutation, useApiQuery } from "@/hooks/useApi";
 import {
@@ -229,10 +229,6 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
   const createSessionMutation = useApiMutation<MarketplaceSessionRead, CreateSessionPayload>(
     `/marketplace/agents/${encodeURIComponent(agentSlug)}/sessions`
   );
-
-  useEffect(() => {
-    setReviewPage(1);
-  }, [insightsQuery.data?.reviews.length]);
 
   if (!agent) {
     return null;

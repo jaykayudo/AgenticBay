@@ -13,7 +13,7 @@ from app.auth.session_manager import (
     RefreshTokenReuseDetectedError,
     SessionManager,
 )
-from app.models.user import User
+from app.models.users import User
 from app.schemas.auth import (
     AuthSessionListResponse,
     AuthSessionRead,

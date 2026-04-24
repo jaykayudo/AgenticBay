@@ -154,10 +154,17 @@ class PaymentInfo(BaseModel):
     blockchain: str = "ARC-TESTNET"
 
 
+class ContractData(BaseModel):
+    invoice_id: str
+    invoice_contract: str
+    function_name: str = "payInvoice"
+
+
 class PaymentResponseData(BaseModel):
     amount: float
     description: str
-    payment_info: PaymentInfo
+    payment_info: PaymentInfo | None = None
+    contract_data: ContractData | None = None
 
 
 class PaymentResponse(BaseMessage):
