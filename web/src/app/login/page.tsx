@@ -88,20 +88,14 @@ function BrandMark() {
   );
 }
 
-function AuthShell({
-  children,
-  subtitle,
-}: {
-  children: ReactNode;
-  subtitle?: string;
-}) {
+function AuthShell({ children, subtitle }: { children: ReactNode; subtitle?: string }) {
   return (
     <main className="app-shell flex min-h-screen px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto flex w-full max-w-[28rem] items-center justify-center">
         <section className="app-panel w-full p-5 sm:p-8">
           <div className="text-center">
             <BrandMark />
-            <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <p className="mt-5 text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
               {MARKETPLACE_NAME}
             </p>
             <h1 className="mt-3 text-[1.95rem] font-semibold tracking-[-0.04em] text-[var(--text)]">
@@ -196,24 +190,19 @@ function LoginContent() {
   const [activeMethod, setActiveMethod] = useState<AuthMethod>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [dismissedCallbackError, setDismissedCallbackError] = useState(false);
-  const [sessionCheckState, setSessionCheckState] = useState<"checking" | "guest" | "authenticated">(
-    "checking"
-  );
+  const [sessionCheckState, setSessionCheckState] = useState<
+    "checking" | "guest" | "authenticated"
+  >("checking");
 
   const normalizedEmail = email.trim().toLowerCase();
   const emailIsValid = EMAIL_PATTERN.test(normalizedEmail);
   const emailHasValue = email.trim().length > 0;
   const showEmailValidation = emailTouched && emailHasValue && !emailIsValid;
   const callbackError = useMemo(
-    () =>
-      formatCallbackError(
-        searchParams.get("error"),
-        searchParams.get("error_description")
-      ),
+    () => formatCallbackError(searchParams.get("error"), searchParams.get("error_description")),
     [searchParams]
   );
-  const displayedError =
-    submissionError ?? (dismissedCallbackError ? null : callbackError);
+  const displayedError = submissionError ?? (dismissedCallbackError ? null : callbackError);
   const authInProgress = activeMethod !== null;
   const authenticated = sessionCheckState === "authenticated";
 
@@ -371,15 +360,12 @@ function LoginContent() {
 
       <form className="space-y-4" onSubmit={(event) => void handleEmailSubmit(event)}>
         <div className="space-y-2">
-          <label
-            htmlFor="email"
-            className="text-sm font-medium text-[var(--text)]"
-          >
+          <label htmlFor="email" className="text-sm font-medium text-[var(--text)]">
             Email address
           </label>
 
           <div className="relative">
-            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--text-muted)]" />
+            <Mail className="pointer-events-none absolute top-1/2 left-4 h-4.5 w-4.5 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
               id="email"
               type="email"
@@ -395,7 +381,7 @@ function LoginContent() {
               }}
               onBlur={() => setEmailTouched(true)}
               className={cn(
-                "h-13 rounded-[1rem] border-[var(--border)] bg-[var(--surface)] pl-11 pr-4 text-sm text-[var(--text)] shadow-[var(--shadow-soft)] placeholder:text-[var(--text-muted)]",
+                "h-13 rounded-[1rem] border-[var(--border)] bg-[var(--surface)] pr-4 pl-11 text-sm text-[var(--text)] shadow-[var(--shadow-soft)] placeholder:text-[var(--text-muted)]",
                 "focus-visible:border-[var(--ring)] focus-visible:ring-4 focus-visible:ring-[var(--ring)]/60",
                 showEmailValidation && "border-[var(--danger)]"
               )}
@@ -403,9 +389,7 @@ function LoginContent() {
           </div>
 
           {showEmailValidation ? (
-            <p className="text-sm text-[var(--danger)]">
-              Enter a valid email address to continue.
-            </p>
+            <p className="text-sm text-[var(--danger)]">Enter a valid email address to continue.</p>
           ) : null}
         </div>
 
@@ -436,7 +420,10 @@ function LoginContent() {
 
       <p className="mt-7 text-center text-sm leading-6 text-[var(--text-muted)]">
         By signing in you agree to our{" "}
-        <Link href="/terms" className="font-medium text-[var(--text)] transition hover:text-[var(--primary)]">
+        <Link
+          href="/terms"
+          className="font-medium text-[var(--text)] transition hover:text-[var(--primary)]"
+        >
           Terms of Service
         </Link>{" "}
         and{" "}

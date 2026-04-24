@@ -467,7 +467,9 @@ class AgentAnalyticsService:
             grouped.items(),
             key=lambda item: (-len(item[1]), -sum(job.amount for job in item[1]), item[0]),
         )
-        percentages = _normalized_percentages([len(action_jobs) for _, action_jobs in sorted_groups])
+        percentages = _normalized_percentages(
+            [len(action_jobs) for _, action_jobs in sorted_groups]
+        )
 
         items = [
             ActionBreakdownItem(

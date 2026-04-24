@@ -81,9 +81,7 @@ export function StatsBar() {
             return (
               <div
                 key={item.key}
-                className={cn(
-                  "flex items-center justify-center gap-4 px-6 py-6 sm:px-8 sm:py-8"
-                )}
+                className={cn("flex items-center justify-center gap-4 px-6 py-6 sm:px-8 sm:py-8")}
               >
                 {isLoading ? (
                   <StatSkeleton />

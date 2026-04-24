@@ -101,7 +101,7 @@ function StatCard({
 }) {
   return (
     <section
-      className="app-panel animate-in fade-in slide-in-from-bottom-4 p-5 duration-500 sm:p-6"
+      className="app-panel animate-in p-5 duration-500 fade-in slide-in-from-bottom-4 sm:p-6"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between gap-4">
@@ -145,7 +145,9 @@ function RevenueChart({ series }: { series: AgentAnalyticsResponse["revenueSerie
                     title={`${item.label}: ${currencyFormatter.format(item.amount)} across ${item.jobs} jobs`}
                   />
                 </div>
-                <div className="mt-3 text-center text-xs text-[var(--text-muted)]">{item.label}</div>
+                <div className="mt-3 text-center text-xs text-[var(--text-muted)]">
+                  {item.label}
+                </div>
               </div>
             );
           })}
@@ -173,7 +175,9 @@ function HorizontalBreakdown({
             </div>
             <div className="text-right">
               <p className="text-sm font-medium text-[var(--text)] tabular-nums">
-                {valueFormatter ? valueFormatter(item.percentage) : `${item.percentage.toFixed(1)}%`}
+                {valueFormatter
+                  ? valueFormatter(item.percentage)
+                  : `${item.percentage.toFixed(1)}%`}
               </p>
               <p className="mt-1 text-sm text-[var(--text-muted)]">{item.value}</p>
             </div>
@@ -247,7 +251,7 @@ export default function AgentAnalyticsPage() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <Link
-              href="/dashboard#agents"
+              href="/dashboard/owner#agents"
               className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -323,7 +327,10 @@ export default function AgentAnalyticsPage() {
 
       {analytics ? (
         <>
-          <section key={`${analytics.agentId}-${deferredRange}`} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
+          <section
+            key={`${analytics.agentId}-${deferredRange}`}
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6"
+          >
             <StatCard
               icon={CalendarRange}
               label="Total Jobs"
@@ -358,7 +365,7 @@ export default function AgentAnalyticsPage() {
             <section className="app-panel p-5 sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                     Revenue
                   </p>
                   <h2 className="mt-2 text-[1.15rem] font-semibold tracking-[-0.02em] text-[var(--text)]">
@@ -381,7 +388,7 @@ export default function AgentAnalyticsPage() {
             </section>
 
             <section className="app-panel p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                 Actions
               </p>
               <h2 className="mt-2 text-[1.15rem] font-semibold tracking-[-0.02em] text-[var(--text)]">
@@ -399,7 +406,7 @@ export default function AgentAnalyticsPage() {
             <section className="app-panel p-5 sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                     Reviews
                   </p>
                   <h2 className="mt-2 text-[1.15rem] font-semibold tracking-[-0.02em] text-[var(--text)]">
@@ -442,7 +449,7 @@ export default function AgentAnalyticsPage() {
             <section className="app-panel p-5 sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                     Response time
                   </p>
                   <h2 className="mt-2 text-[1.15rem] font-semibold tracking-[-0.02em] text-[var(--text)]">
@@ -465,7 +472,7 @@ export default function AgentAnalyticsPage() {
 
       <div className="flex justify-start">
         <Link
-          href="/dashboard#agents"
+          href="/dashboard/owner#agents"
           className="inline-flex h-11 items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-medium text-[var(--text)] shadow-[var(--shadow-soft)] transition hover:bg-[var(--surface-2)]"
         >
           Return to dashboard

@@ -29,7 +29,7 @@ export function ThemeToggle() {
           aria-pressed={activeTheme === value}
           className={cn(
             "theme-chip inline-flex h-9 items-center gap-2 rounded-full px-3 text-sm font-medium transition-all",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            "focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:outline-none"
           )}
           onClick={() => setTheme(value)}
         >

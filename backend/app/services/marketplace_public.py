@@ -549,9 +549,7 @@ class MarketplacePublicService:
 
         return distribution
 
-    def _build_reviews(
-        self, seed: PublicAgentSeed, now: datetime
-    ) -> list[MarketplaceReviewItem]:
+    def _build_reviews(self, seed: PublicAgentSeed, now: datetime) -> list[MarketplaceReviewItem]:
         review_total = max(8, min(12, seed.review_count // 12))
         base = sum(ord(char) for char in seed.slug)
         reviews: list[MarketplaceReviewItem] = []

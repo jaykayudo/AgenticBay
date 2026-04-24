@@ -16,6 +16,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useApiQuery } from "@/hooks/useApi";
 import { formatUsdc } from "@/lib/marketplace-data";
+import {
+  buildMockJobResultPayload,
+  patchMockMarketplaceSession,
+  type MockMarketplaceSessionRecord,
+} from "@/lib/mock-api";
 import { cn } from "@/lib/utils";
 
 type MarketplaceSessionRead = {
@@ -104,14 +109,7 @@ type OrchestratorEnvelope =
 
 type FeedItem = {
   id: string;
-  kind:
-    | "system"
-    | "orchestrator"
-    | "processing"
-    | "payment"
-    | "confirmation"
-    | "result"
-    | "error";
+  kind: "system" | "orchestrator" | "processing" | "payment" | "confirmation" | "result" | "error";
   type: string;
   title: string;
   body: string;
@@ -205,8 +203,7 @@ function FeedCard({
   onPayNow: (invoiceId: string) => void;
 }) {
   const payment = item.payment;
-  const isPaymentCard =
-    item.kind === "payment" && payment && activePaymentId === payment.invoiceId;
+  const isPaymentCard = item.kind === "payment" && payment && activePaymentId === payment.invoiceId;
 
   return (
     <article className={cn("rounded-[1.4rem] border p-4 sm:p-5", toneClasses(item.kind))}>
@@ -215,7 +212,7 @@ function FeedCard({
           <p className="text-sm font-semibold text-[var(--text)]">{item.title}</p>
           <p className="mt-2 text-sm leading-7 text-[var(--text-muted)]">{item.body}</p>
         </div>
-        <span className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+        <span className="text-xs font-medium tracking-[0.18em] text-[var(--text-muted)] uppercase">
           {timeFormatter.format(new Date(item.timestamp))}
         </span>
       </div>
@@ -224,7 +221,7 @@ function FeedCard({
         <div className="mt-4 rounded-[1.2rem] border border-[var(--border)] bg-white/70 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                 Amount
               </p>
               <p className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -232,21 +229,19 @@ function FeedCard({
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                 Function
               </p>
-              <p className="mt-2 break-all text-sm font-medium text-[var(--text)]">
+              <p className="mt-2 text-sm font-medium break-all text-[var(--text)]">
                 {payment.functionName}
               </p>
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
               Contract
             </p>
-            <p className="mt-2 break-all text-sm text-[var(--text)]">
-              {payment.contractAddress}
-            </p>
+            <p className="mt-2 text-sm break-all text-[var(--text)]">{payment.contractAddress}</p>
           </div>
 
           {isPaymentCard ? (
@@ -302,6 +297,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
   const sessionStartedRef = useRef(false);
   const initializedRef = useRef(false);
   const currentStatusRef = useRef<MarketplaceSessionRead["status"]>("queued");
+  const mockTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     currentStatusRef.current = sessionStatus;
@@ -334,6 +330,104 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
     ]);
   }
 
+  function clearMockTimers() {
+    mockTimersRef.current.forEach((timer) => clearTimeout(timer));
+    mockTimersRef.current = [];
+  }
+
+  function persistMockSession(
+    updates: Partial<MockMarketplaceSessionRecord>
+  ): MockMarketplaceSessionRecord | null {
+    if (!session) {
+      return null;
+    }
+
+    return patchMockMarketplaceSession(session.sessionId, updates);
+  }
+
+  function queueMockTimer(delay: number, callback: () => void) {
+    const timer = setTimeout(callback, delay);
+    mockTimersRef.current.push(timer);
+  }
+
+  function scheduleMockCompletionFlow(
+    baseSession: MarketplaceSessionRead,
+    amountLocked: number,
+    delayOffset = 0
+  ) {
+    const steps = [
+      {
+        delay: 600,
+        progress: 56,
+        message:
+          "Orchestrator handed the scoped brief into the execution lane and is collecting outputs.",
+        stage: "execution_started",
+      },
+      {
+        delay: 1250,
+        progress: 78,
+        message:
+          "Outputs are being normalized into the delivery package and confidence checks are running.",
+        stage: "packaging_results",
+      },
+      {
+        delay: 1900,
+        progress: 94,
+        message:
+          "Final result package is ready. Preparing completion payload for the session feed.",
+        stage: "finalizing",
+      },
+    ];
+
+    steps.forEach((step) => {
+      queueMockTimer(delayOffset + step.delay, () => {
+        setSessionStatus("processing");
+        setLatestProgress(step.progress);
+        appendFeed({
+          kind: "processing",
+          type: "SERVICE_AGENT",
+          title: `Processing ${step.progress}%`,
+          body: step.message,
+          payload: {
+            progress: step.progress,
+            stage: step.stage,
+          },
+        });
+      });
+    });
+
+    queueMockTimer(delayOffset + 2550, () => {
+      const nextSession =
+        persistMockSession({
+          status: "completed",
+          amountLockedUsdc: amountLocked,
+        }) ??
+        ({
+          ...baseSession,
+          amountLockedUsdc: amountLocked,
+          status: "completed",
+        } as MockMarketplaceSessionRecord);
+
+      const result = buildMockJobResultPayload(nextSession);
+      persistMockSession({
+        status: "completed",
+        amountLockedUsdc: amountLocked,
+        resultPayload: result,
+      });
+      setAmountLockedUsdc(amountLocked);
+      setSessionStatus("completed");
+      setLatestProgress(100);
+      setResultPayload(result);
+      appendFeed({
+        kind: "result",
+        type: "CLOSE_APPEAL",
+        title: "Job completed",
+        body: `${baseSession.actionName} completed for ${baseSession.agentName}.`,
+        payload: result,
+      });
+    });
+  }
+
   useEffect(() => {
     if (!session || initializedRef.current) {
       return;
@@ -353,6 +447,38 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
         mode: session.mode,
       },
     });
+
+    if (session.status === "awaiting_payment") {
+      const invoiceId = `mock-invoice-${session.sessionId.slice(0, 8)}`;
+      setActivePaymentId(invoiceId);
+      appendFeed({
+        kind: "payment",
+        type: "PAYMENT",
+        title: "Escrow payment requested",
+        body: `Escrow deposit for ${session.actionName}.`,
+        payload: {
+          amount: session.priceUsdc,
+          description: `Escrow deposit for ${session.actionName}`,
+        },
+        payment: {
+          amount: session.priceUsdc,
+          description: `Escrow deposit for ${session.actionName}`,
+          invoiceId,
+          contractAddress: "0xDEMOESCROW0000000000000000000000000000",
+          functionName: "payInvoice",
+        },
+      });
+    }
+
+    if (session.status === "completed" && session.resultPayload) {
+      appendFeed({
+        kind: "result",
+        type: "CLOSE_APPEAL",
+        title: "Job completed",
+        body: `${session.actionName} completed for ${session.agentName}.`,
+        payload: session.resultPayload,
+      });
+    }
   }, [session]);
 
   useEffect(() => {
@@ -362,6 +488,105 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
 
     manualShutdownRef.current = false;
     let disposed = false;
+
+    if (session.socketUrl.startsWith("mock://")) {
+      clearMockTimers();
+      setConnectionState("connecting");
+      appendLog("Using mocked marketplace session data.");
+
+      queueMockTimer(180, () => {
+        if (disposed) {
+          return;
+        }
+
+        setConnectionState("connected");
+        appendLog("Mock session connected.");
+
+        if (session.status === "queued") {
+          sessionStartedRef.current = true;
+          persistMockSession({ status: "processing" });
+          setSessionStatus("processing");
+          appendFeed({
+            kind: "system",
+            type: "SERVICE_AGENT",
+            title: "User agent kickoff",
+            body: `Requested execution for ${session.actionName}.`,
+            payload: {
+              actionId: session.actionId,
+              inputSummary: session.inputSummary,
+              mode: session.mode,
+            },
+          });
+          appendFeed({
+            kind: "processing",
+            type: "SERVICE_AGENT",
+            title: "Processing 18%",
+            body: "Orchestrator is analyzing the job brief and preparing execution steps.",
+            payload: {
+              progress: 18,
+              stage: "planning",
+            },
+          });
+          setLatestProgress(18);
+
+          queueMockTimer(700, () => {
+            setLatestProgress(28);
+            appendFeed({
+              kind: "processing",
+              type: "SERVICE_AGENT",
+              title: "Processing 28%",
+              body: "Initial plan assembled. The next step is validating scope and escrow requirements.",
+              payload: {
+                progress: 28,
+                stage: "scope_validated",
+              },
+            });
+          });
+
+          if (session.mode === "demo" || session.priceUsdc === 0) {
+            scheduleMockCompletionFlow(session, 0, 1050);
+          } else {
+            queueMockTimer(1250, () => {
+              const invoiceId = `mock-invoice-${session.sessionId.slice(0, 8)}`;
+              persistMockSession({ status: "awaiting_payment" });
+              setSessionStatus("awaiting_payment");
+              setActivePaymentId(invoiceId);
+              appendFeed({
+                kind: "payment",
+                type: "PAYMENT",
+                title: "Escrow payment requested",
+                body: `Escrow deposit for ${session.actionName}.`,
+                payload: {
+                  amount: session.priceUsdc,
+                  description: `Escrow deposit for ${session.actionName}`,
+                },
+                payment: {
+                  amount: session.priceUsdc,
+                  description: `Escrow deposit for ${session.actionName}`,
+                  invoiceId,
+                  contractAddress: "0xDEMOESCROW0000000000000000000000000000",
+                  functionName: "payInvoice",
+                },
+              });
+            });
+          }
+        } else if (session.status === "processing") {
+          setLatestProgress((current) => current ?? 42);
+          appendLog("Restored mock session in processing state.");
+        } else if (session.status === "awaiting_payment") {
+          setActivePaymentId(`mock-invoice-${session.sessionId.slice(0, 8)}`);
+          appendLog("Restored mock session waiting for payment.");
+        } else if (session.status === "completed") {
+          appendLog("Restored mock session with completed result.");
+        }
+      });
+
+      return () => {
+        disposed = true;
+        manualShutdownRef.current = true;
+        clearMockTimers();
+      };
+    }
 
     const connect = () => {
       const nextState = reconnectDelayRef.current > 1000 ? "reconnecting" : "connecting";
@@ -503,11 +728,9 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
             });
             break;
           case "SERVICE_AGENT": {
-            const payload =
-              parsed.data && typeof parsed.data === "object" ? parsed.data : null;
+            const payload = parsed.data && typeof parsed.data === "object" ? parsed.data : null;
             const status = payload?.status;
-            const progressValue =
-              typeof payload?.progress === "number" ? payload.progress : null;
+            const progressValue = typeof payload?.progress === "number" ? payload.progress : null;
             const amountLocked =
               typeof payload?.amountLockedUsdc === "number" ? payload.amountLockedUsdc : null;
 
@@ -526,7 +749,8 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
             appendFeed({
               kind: progressValue !== null ? "processing" : "orchestrator",
               type: parsed.type,
-              title: progressValue !== null ? `Processing ${progressValue}%` : "Orchestrator update",
+              title:
+                progressValue !== null ? `Processing ${progressValue}%` : "Orchestrator update",
               body:
                 parsed.message ??
                 (typeof parsed.data === "string"
@@ -585,6 +809,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
     return () => {
       disposed = true;
       manualShutdownRef.current = true;
+      clearMockTimers();
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
       }
@@ -605,6 +830,29 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
   }
 
   function handlePayNow(invoiceId: string) {
+    if (session?.socketUrl.startsWith("mock://")) {
+      clearMockTimers();
+      persistMockSession({
+        status: "processing",
+        amountLockedUsdc: session.priceUsdc,
+      });
+      setActivePaymentId(null);
+      setAmountLockedUsdc(session.priceUsdc);
+      setSessionStatus("processing");
+      appendFeed({
+        kind: "confirmation",
+        type: "PAYMENT_SUCCESSFUL",
+        title: "Payment confirmed",
+        body: `Invoice ${invoiceId} has been confirmed and funds are now locked in escrow.`,
+        payload: {
+          invoiceId,
+          amountLockedUsdc: session.priceUsdc,
+        },
+      });
+      scheduleMockCompletionFlow(session, session.priceUsdc);
+      return;
+    }
+
     const sent = sendPayload({
       type: "PAYMENT_SUCCESSFUL",
       data: {
@@ -627,7 +875,32 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
       return;
     }
 
-    if (!window.confirm("Cancel this job session? The orchestrator will stop further processing.")) {
+    if (
+      !window.confirm("Cancel this job session? The orchestrator will stop further processing.")
+    ) {
+      return;
+    }
+
+    if (session.socketUrl.startsWith("mock://")) {
+      clearMockTimers();
+      persistMockSession({ status: "cancelled" });
+      setSessionStatus("cancelled");
+      appendLog("Mock session canceled by the user.", "warning");
+      appendFeed({
+        kind: "system",
+        type: "CLOSE",
+        title: "Cancel requested",
+        body: "The user agent asked the orchestrator to close this job session.",
+      });
+      appendFeed({
+        kind: "orchestrator",
+        type: "SERVICE_AGENT",
+        title: "Session cancelled",
+        body: "The mocked orchestrator stopped further processing for this job.",
+        payload: {
+          status: "cancelled",
+        },
+      });
       return;
     }
 
@@ -800,7 +1073,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
 
               <section className="app-panel p-5 sm:p-6">
                 <details>
-                  <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                     <Logs className="h-4 w-4" />
                     Live logs
                   </summary>
@@ -824,7 +1097,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <p>{log.message}</p>
-                            <span className="shrink-0 text-xs uppercase tracking-[0.16em]">
+                            <span className="shrink-0 text-xs tracking-[0.16em] uppercase">
                               {timeFormatter.format(new Date(log.timestamp))}
                             </span>
                           </div>
@@ -892,7 +1165,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
 
                 <div className="mt-5 space-y-3">
                   <div className="app-subtle rounded-2xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Agent
                     </p>
                     <p className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -900,7 +1173,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                     </p>
                   </div>
                   <div className="app-subtle rounded-2xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Action
                     </p>
                     <p className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -908,7 +1181,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                     </p>
                   </div>
                   <div className="app-subtle rounded-2xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Input summary
                     </p>
                     <p className="mt-2 text-sm leading-7 text-[var(--text-muted)]">
@@ -916,7 +1189,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                     </p>
                   </div>
                   <div className="app-subtle rounded-2xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Amount locked in escrow
                     </p>
                     <p className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -929,14 +1202,14 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
               <section className="app-panel p-5 sm:p-6">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-[var(--primary)]" />
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <h3 className="text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                     Session status
                   </h3>
                 </div>
 
                 <div className="mt-4 space-y-3">
                   <div className="app-subtle rounded-2xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Current state
                     </p>
                     <p className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -944,7 +1217,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                     </p>
                   </div>
                   <div className="app-subtle rounded-2xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Delivery window
                     </p>
                     <p className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -952,7 +1225,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                     </p>
                   </div>
                   <div className="app-subtle rounded-2xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Created
                     </p>
                     <p className="mt-2 text-base font-semibold text-[var(--text)]">

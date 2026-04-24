@@ -126,13 +126,37 @@ export function Starfield() {
       ctx.fillStyle = "rgba(60, 140, 80, 0.5)";
       // Smaller continent blobs
       ctx.beginPath();
-      ctx.ellipse(ex - radius * 0.2, ey - radius * 0.1, radius * 0.3, radius * 0.2, -0.3, 0, Math.PI * 2);
+      ctx.ellipse(
+        ex - radius * 0.2,
+        ey - radius * 0.1,
+        radius * 0.3,
+        radius * 0.2,
+        -0.3,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
       ctx.beginPath();
-      ctx.ellipse(ex + radius * 0.3, ey + radius * 0.15, radius * 0.2, radius * 0.25, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(
+        ex + radius * 0.3,
+        ey + radius * 0.15,
+        radius * 0.2,
+        radius * 0.25,
+        0.4,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
       ctx.beginPath();
-      ctx.ellipse(ex - radius * 0.1, ey + radius * 0.4, radius * 0.15, radius * 0.1, 0.2, 0, Math.PI * 2);
+      ctx.ellipse(
+        ex - radius * 0.1,
+        ey + radius * 0.4,
+        radius * 0.15,
+        radius * 0.1,
+        0.2,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
 
       ctx.restore();

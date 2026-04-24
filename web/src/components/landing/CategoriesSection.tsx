@@ -56,7 +56,7 @@ export function CategoriesSection() {
     <section className="landing-section" id="categories">
       <div className="mx-auto max-w-[var(--layout-max)] px-4 md:px-6 xl:px-8">
         <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--primary)]">
+          <p className="text-xs font-semibold tracking-[0.2em] text-[var(--primary)] uppercase">
             Categories
           </p>
           <h2 className="mt-3 text-[clamp(1.6rem,3.5vw,2.4rem)] font-semibold tracking-[-0.035em] text-[var(--text)]">

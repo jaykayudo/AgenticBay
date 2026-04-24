@@ -50,7 +50,7 @@ export function Footer() {
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--primary)] text-white shadow-[var(--shadow-soft)]">
                 <Command className="h-5 w-5" />
               </div>
-              <span className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--text)]">
+              <span className="text-sm font-semibold tracking-[0.2em] text-[var(--text)] uppercase">
                 AgenticBay
               </span>
             </Link>
@@ -63,7 +63,7 @@ export function Footer() {
           {/* Link columns */}
           {footerColumns.map((column) => (
             <div key={column.title}>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                 {column.title}
               </p>
               <ul className="mt-4 space-y-3">

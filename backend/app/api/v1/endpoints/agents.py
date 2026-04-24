@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
-from app.schemas.analytics import AgentAnalyticsResponse, AnalyticsRange
 from app.schemas.agent import AgentRegistrationRequest, AgentRegistrationResponse
+from app.schemas.analytics import AgentAnalyticsResponse, AnalyticsRange
 from app.services.agent_analytics import AgentAnalyticsNotFoundError, AgentAnalyticsService
 from app.services.agent_registry import (
     AgentManifestFetchError,

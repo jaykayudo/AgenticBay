@@ -5,7 +5,9 @@ from fastapi.testclient import TestClient
 os.environ["APP_ENV"] = "testing"
 os.environ["DEBUG"] = "true"
 os.environ["SECRET_KEY"] = "test-secret"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_bay_test"
+os.environ["DATABASE_URL"] = (
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_bay_test"
+)
 os.environ["DATABASE_URL_SYNC"] = (
     "postgresql+psycopg2://postgres:postgres@localhost:5432/agentic_bay_test"
 )

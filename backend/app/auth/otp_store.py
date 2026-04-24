@@ -89,4 +89,3 @@ class OTPStore:
 
     async def code_exists(self, email: str) -> bool:
         return bool(await self.redis.exists(self._key(email)))
-

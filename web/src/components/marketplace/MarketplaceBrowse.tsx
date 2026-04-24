@@ -58,13 +58,13 @@ const sortValueSet = new Set(
   marketplaceSortOptions.map((option) => option.value)
 ) as ReadonlySet<MarketplaceSortKey>;
 
-const speedValueSet = new Set(
-  marketplaceSpeedOptions.map((option) => option.value)
-) as ReadonlySet<MarketplaceSpeedKey | "any">;
+const speedValueSet = new Set(marketplaceSpeedOptions.map((option) => option.value)) as ReadonlySet<
+  MarketplaceSpeedKey | "any"
+>;
 
-const ratingValueSet = new Set(
-  ratingOptions.map((option) => option.value)
-) as ReadonlySet<(typeof ratingOptions)[number]["value"]>;
+const ratingValueSet = new Set(ratingOptions.map((option) => option.value)) as ReadonlySet<
+  (typeof ratingOptions)[number]["value"]
+>;
 
 function formatUsdc(value: number) {
   return `${new Intl.NumberFormat("en-US", {
@@ -166,11 +166,7 @@ function recommendedScore(agent: MarketplaceAgent, searchTerm: string) {
   );
 }
 
-function sortAgents(
-  agents: MarketplaceAgent[],
-  sort: MarketplaceSortKey,
-  searchTerm: string
-) {
+function sortAgents(agents: MarketplaceAgent[], sort: MarketplaceSortKey, searchTerm: string) {
   return [...agents].sort((left, right) => {
     switch (sort) {
       case "rating":
@@ -228,13 +224,7 @@ function AgentAvatar({ agent }: { agent: MarketplaceAgent }) {
   );
 }
 
-function AgentCard({
-  agent,
-  view,
-}: {
-  agent: MarketplaceAgent;
-  view: MarketplaceViewMode;
-}) {
+function AgentCard({ agent, view }: { agent: MarketplaceAgent; view: MarketplaceViewMode }) {
   const categoryLabels = agent.categories.map((slug) => categoryLabelBySlug[slug]);
 
   if (view === "list") {
@@ -283,7 +273,7 @@ function AgentCard({
 
           <div className="flex items-end justify-between gap-4 border-t border-[var(--border)] pt-4 lg:min-w-[220px] lg:flex-col lg:items-end lg:border-t-0 lg:pt-0">
             <div className="text-right">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+              <p className="text-xs font-semibold tracking-[0.16em] text-[var(--text-muted)] uppercase">
                 Starting at
               </p>
               <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]">
@@ -344,13 +334,13 @@ function AgentCard({
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <div className="app-subtle rounded-xl p-3">
-          <p className="text-lg font-semibold tabular-nums text-[var(--text)]">
+          <p className="text-lg font-semibold text-[var(--text)] tabular-nums">
             {agent.successRate.toFixed(1)}%
           </p>
           <p className="mt-0.5 text-xs text-[var(--text-muted)]">Success rate</p>
         </div>
         <div className="app-subtle rounded-xl p-3">
-          <p className="text-lg font-semibold tabular-nums text-[var(--text)]">
+          <p className="text-lg font-semibold text-[var(--text)] tabular-nums">
             {agent.jobsCompleted}
           </p>
           <p className="mt-0.5 text-xs text-[var(--text-muted)]">Jobs done</p>
@@ -359,7 +349,7 @@ function AgentCard({
 
       <div className="mt-auto flex items-end justify-between gap-4 border-t border-[var(--border)] pt-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+          <p className="text-xs font-semibold tracking-[0.16em] text-[var(--text-muted)] uppercase">
             Starting at
           </p>
           <p className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[var(--text)]">
@@ -387,12 +377,17 @@ export function MarketplaceBrowse() {
   const [searchDraft, setSearchDraft] = useState(urlSearch);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchDraft(urlSearch);
   }, [urlSearch]);
 
   const deferredSearchTerm = useDeferredValue(searchDraft.trim().toLowerCase());
   const selectedCategories = parseSelectedCategories(searchParams);
-  const minPrice = clamp(parseNumberParam(searchParams.get("minPrice"), PRICE_MIN), PRICE_MIN, PRICE_MAX);
+  const minPrice = clamp(
+    parseNumberParam(searchParams.get("minPrice"), PRICE_MIN),
+    PRICE_MIN,
+    PRICE_MAX
+  );
   const maxPrice = clamp(
     Math.max(parseNumberParam(searchParams.get("maxPrice"), PRICE_MAX), minPrice),
     PRICE_MIN,
@@ -404,7 +399,8 @@ export function MarketplaceBrowse() {
   const viewValue = getViewValue(searchParams.get("view"));
   const pageValue = Math.max(1, parseNumberParam(searchParams.get("page"), 1));
   const speedOption =
-    marketplaceSpeedOptions.find((option) => option.value === speedValue) ?? marketplaceSpeedOptions[0];
+    marketplaceSpeedOptions.find((option) => option.value === speedValue) ??
+    marketplaceSpeedOptions[0];
 
   function updateQuery(
     updates: Record<string, number | string | string[] | null | undefined>,
@@ -428,16 +424,9 @@ export function MarketplaceBrowse() {
       const matchesPrice =
         agent.startingPriceUsdc >= minPrice && agent.startingPriceUsdc <= maxPrice;
       const matchesRating = agent.rating >= minRating;
-      const matchesSpeed =
-        speedOption.maxRank === null || agent.speedRank <= speedOption.maxRank;
+      const matchesSpeed = speedOption.maxRank === null || agent.speedRank <= speedOption.maxRank;
 
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesPrice &&
-        matchesRating &&
-        matchesSpeed
-      );
+      return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesSpeed;
     }),
     sortValue,
     deferredSearchTerm
@@ -523,7 +512,7 @@ export function MarketplaceBrowse() {
                 <Command className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                <p className="text-xs font-semibold tracking-[0.2em] text-[var(--text-muted)] uppercase">
                   AgenticBay
                 </p>
                 <p className="mt-1 text-sm text-[var(--text-muted)]">Marketplace browse</p>
@@ -645,7 +634,9 @@ export function MarketplaceBrowse() {
                             }}
                           />
                           <div>
-                            <p className="text-sm font-medium text-[var(--text)]">{category.label}</p>
+                            <p className="text-sm font-medium text-[var(--text)]">
+                              {category.label}
+                            </p>
                             <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
                               {category.description}
                             </p>
@@ -666,7 +657,7 @@ export function MarketplaceBrowse() {
 
                   <div className="mt-4 space-y-4">
                     <div>
-                      <div className="mb-2 flex items-center justify-between text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                      <div className="mb-2 flex items-center justify-between text-xs font-medium tracking-[0.14em] text-[var(--text-muted)] uppercase">
                         <span>Minimum</span>
                         <span>{formatUsdc(minPrice)}</span>
                       </div>
@@ -690,7 +681,7 @@ export function MarketplaceBrowse() {
                     </div>
 
                     <div>
-                      <div className="mb-2 flex items-center justify-between text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                      <div className="mb-2 flex items-center justify-between text-xs font-medium tracking-[0.14em] text-[var(--text-muted)] uppercase">
                         <span>Maximum</span>
                         <span>{formatUsdc(maxPrice)}</span>
                       </div>
@@ -775,7 +766,7 @@ export function MarketplaceBrowse() {
             </section>
 
             <section className="app-panel-soft p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                 Active filters
               </p>
               <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--text)]">
@@ -806,7 +797,9 @@ export function MarketplaceBrowse() {
                     <span>Sort</span>
                     <select
                       value={sortValue}
-                      onChange={(event) => updateQuery({ sort: event.target.value || undefined }, true)}
+                      onChange={(event) =>
+                        updateQuery({ sort: event.target.value || undefined }, true)
+                      }
                       className="bg-transparent font-medium text-[var(--text)] outline-none"
                     >
                       {marketplaceSortOptions.map((option) => (

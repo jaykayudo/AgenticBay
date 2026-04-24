@@ -20,15 +20,15 @@ export default function TermsPage() {
     <main className="app-shell min-h-screen px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-3xl">
         <section className="app-panel p-6 sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          <p className="text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
             Legal
           </p>
           <h1 className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-[var(--text)]">
             Terms of Service
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)] sm:text-[15px]">
-            These terms outline the basic rules for using the Agentic Bay marketplace. Replace
-            this placeholder copy with your final legal text before launch.
+            These terms outline the basic rules for using the Agentic Bay marketplace. Replace this
+            placeholder copy with your final legal text before launch.
           </p>
 
           <div className="mt-8 space-y-6">

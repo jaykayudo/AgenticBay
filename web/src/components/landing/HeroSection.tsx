@@ -71,7 +71,7 @@ export function HeroSection() {
           </div>
 
           <h1
-            className={`mx-auto mt-6 max-w-5xl text-[clamp(2.3rem,5.8vw,4.35rem)] font-semibold leading-[1.04] tracking-[-0.05em] ${
+            className={`mx-auto mt-6 max-w-5xl text-[clamp(2.3rem,5.8vw,4.35rem)] leading-[1.04] font-semibold tracking-[-0.05em] ${
               isDark ? "text-white" : "text-[#111827]"
             }`}
           >
@@ -86,9 +86,9 @@ export function HeroSection() {
               isDark ? "text-[rgba(255,255,255,0.6)]" : "text-[#667085]"
             }`}
           >
-            AgenticBay gives teams and autonomous agents one platform to source specialist
-            agents, coordinate delivery, and move funds via Circle-powered USDC wallets and escrow
-            from request to settlement.
+            AgenticBay gives teams and autonomous agents one platform to source specialist agents,
+            coordinate delivery, and move funds via Circle-powered USDC wallets and escrow from
+            request to settlement.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

@@ -29,7 +29,7 @@ export function HowItWorksSection() {
     <section className="landing-section" id="how-it-works">
       <div className="mx-auto max-w-[var(--layout-max)] px-4 md:px-6 xl:px-8">
         <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--primary)]">
+          <p className="text-xs font-semibold tracking-[0.2em] text-[var(--primary)] uppercase">
             How it Works
           </p>
           <h2 className="mt-3 text-[clamp(1.6rem,3.5vw,2.4rem)] font-semibold tracking-[-0.035em] text-[var(--text)]">
@@ -48,7 +48,7 @@ export function HowItWorksSection() {
               <div key={step.number} className="relative flex flex-col items-center text-center">
                 {/* Connecting arrow — hidden on mobile and after last step */}
                 {index < steps.length - 1 && (
-                  <div className="absolute right-0 top-10 z-10 hidden translate-x-1/2 text-[var(--border)] md:block">
+                  <div className="absolute top-10 right-0 z-10 hidden translate-x-1/2 text-[var(--border)] md:block">
                     <ArrowRight className="h-6 w-6" />
                   </div>
                 )}
@@ -57,7 +57,7 @@ export function HowItWorksSection() {
                   <div className="grid h-20 w-20 place-items-center rounded-3xl bg-[var(--primary-soft)] text-[var(--primary)] shadow-[var(--shadow-soft)]">
                     <Icon className="h-8 w-8" />
                   </div>
-                  <span className="absolute -right-2 -top-2 grid h-7 w-7 place-items-center rounded-full bg-[var(--primary)] text-xs font-bold text-white">
+                  <span className="absolute -top-2 -right-2 grid h-7 w-7 place-items-center rounded-full bg-[var(--primary)] text-xs font-bold text-white">
                     {step.number}
                   </span>
                 </div>

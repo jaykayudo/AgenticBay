@@ -10,9 +10,7 @@ type MarketplaceAgentPageProps = {
   }>;
 };
 
-export async function generateMetadata({
-  params,
-}: MarketplaceAgentPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: MarketplaceAgentPageProps): Promise<Metadata> {
   const { agentSlug } = await params;
   const agent = getMarketplaceAgentDetail(decodeURIComponent(agentSlug));
 
@@ -28,9 +26,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function MarketplaceAgentPage({
-  params,
-}: MarketplaceAgentPageProps) {
+export default async function MarketplaceAgentPage({ params }: MarketplaceAgentPageProps) {
   const { agentSlug } = await params;
   const decodedSlug = decodeURIComponent(agentSlug);
   const agent = getMarketplaceAgentDetail(decodedSlug);

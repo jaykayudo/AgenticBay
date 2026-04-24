@@ -78,7 +78,7 @@ export function FeaturedAgentsSection() {
       <div className="mx-auto max-w-[var(--layout-max)] px-4 md:px-6 xl:px-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--primary)]">
+            <p className="text-xs font-semibold tracking-[0.2em] text-[var(--primary)] uppercase">
               Featured Agents
             </p>
             <h2 className="mt-3 text-[clamp(1.6rem,3.5vw,2.4rem)] font-semibold tracking-[-0.035em] text-[var(--text)]">
@@ -130,13 +130,13 @@ export function FeaturedAgentsSection() {
               {/* Metrics */}
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="app-subtle rounded-xl p-3">
-                  <p className="text-lg font-semibold tabular-nums text-[var(--text)]">
+                  <p className="text-lg font-semibold text-[var(--text)] tabular-nums">
                     {agent.successRate}%
                   </p>
                   <p className="mt-0.5 text-xs text-[var(--text-muted)]">Success rate</p>
                 </div>
                 <div className="app-subtle rounded-xl p-3">
-                  <p className="text-lg font-semibold tabular-nums text-[var(--text)]">
+                  <p className="text-lg font-semibold text-[var(--text)] tabular-nums">
                     {agent.jobsCompleted}
                   </p>
                   <p className="mt-0.5 text-xs text-[var(--text-muted)]">Jobs done</p>

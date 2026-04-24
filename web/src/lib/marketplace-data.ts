@@ -8,12 +8,7 @@ export type MarketplaceCategorySlug =
   | "security"
   | "development";
 
-export type MarketplaceSpeedKey =
-  | "instant"
-  | "under-1-hour"
-  | "same-day"
-  | "1-3-days"
-  | "3-7-days";
+export type MarketplaceSpeedKey = "instant" | "under-1-hour" | "same-day" | "1-3-days" | "3-7-days";
 
 export type MarketplaceSortKey =
   | "recommended"
@@ -82,7 +77,11 @@ export type MarketplaceAgentDetail = MarketplaceAgent & {
 };
 
 export const marketplaceCategories: MarketplaceCategory[] = [
-  { slug: "research", label: "Research", description: "Market analysis and strategic intelligence" },
+  {
+    slug: "research",
+    label: "Research",
+    description: "Market analysis and strategic intelligence",
+  },
   { slug: "automation", label: "Automation", description: "Workflow, ops, and systems execution" },
   {
     slug: "customer-support",
@@ -90,10 +89,18 @@ export const marketplaceCategories: MarketplaceCategory[] = [
     description: "Inbox coverage and ticket operations",
   },
   { slug: "design", label: "Design", description: "Creative systems, assets, and UX support" },
-  { slug: "data-analysis", label: "Data Analysis", description: "Dashboards, models, and reporting" },
+  {
+    slug: "data-analysis",
+    label: "Data Analysis",
+    description: "Dashboards, models, and reporting",
+  },
   { slug: "content", label: "Content", description: "Writing, editing, and messaging workflows" },
   { slug: "security", label: "Security", description: "Audit, monitoring, and compliance support" },
-  { slug: "development", label: "Development", description: "Code, testing, and technical delivery" },
+  {
+    slug: "development",
+    label: "Development",
+    description: "Code, testing, and technical delivery",
+  },
 ];
 
 export const marketplaceSpeedOptions: MarketplaceSpeedOption[] = [
@@ -526,8 +533,7 @@ function buildMarketplaceActions(agent: MarketplaceAgent): MarketplaceAgentActio
   const baseHours = actionBaseHoursBySpeedRank[agent.speedRank - 1] ?? 24;
   const hasDemo = !agent.categories.some((category) => nonDemoCategories.has(category));
   const primaryCategory = categoryLabelBySlug[agent.categories[0]];
-  const secondaryCategory =
-    categoryLabelBySlug[agent.categories[1] ?? agent.categories[0]];
+  const secondaryCategory = categoryLabelBySlug[agent.categories[1] ?? agent.categories[0]];
   const [firstTag, secondTag, thirdTag] = agent.tags;
 
   const actionBlueprints = [

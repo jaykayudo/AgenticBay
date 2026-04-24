@@ -13,9 +13,7 @@ export const metadata: Metadata = {
   description: "Review the marketplace job session created when you hired an agent.",
 };
 
-export default async function MarketplaceJobSessionPage({
-  params,
-}: JobSessionPageProps) {
+export default async function MarketplaceJobSessionPage({ params }: JobSessionPageProps) {
   const { sessionId } = await params;
 
   return <JobSessionPage sessionId={decodeURIComponent(sessionId)} />;

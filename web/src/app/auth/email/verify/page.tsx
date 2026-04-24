@@ -1,14 +1,7 @@
 "use client";
 
 import axios, { type AxiosError } from "axios";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Clock3,
-  Mail,
-  RefreshCcw,
-  ShieldAlert,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3, Mail, RefreshCcw, ShieldAlert } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, startTransition, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { ClipboardEvent, KeyboardEvent } from "react";
@@ -137,7 +130,12 @@ function EmailOtpVerificationContent() {
   const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - now) / 1000));
   const hasCompleteCode = joinedCode.length === DIGIT_COUNT && digits.every(Boolean);
   const verifyDisabled =
-    isSubmitting || isResending || expirySeconds === 0 || isInvalidated || !hasCompleteCode || !email;
+    isSubmitting ||
+    isResending ||
+    expirySeconds === 0 ||
+    isInvalidated ||
+    !hasCompleteCode ||
+    !email;
   const resendDisabled = isSubmitting || isResending || resendSeconds > 0;
   const friendlyEmail = email || "you@example.com";
   const effectiveStatusMessage =
@@ -419,7 +417,7 @@ function EmailOtpVerificationContent() {
                   AB
                 </div>
                 <div>
-                  <p className="font-semibold uppercase tracking-[0.18em] text-amber-200/90">
+                  <p className="font-semibold tracking-[0.18em] text-amber-200/90 uppercase">
                     Agentic Bay
                   </p>
                   <p className="text-sm text-stone-400">Secure marketplace access</p>
@@ -427,14 +425,14 @@ function EmailOtpVerificationContent() {
               </div>
 
               <div className="space-y-5">
-                <p className="inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-amber-200/80">
+                <p className="inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-1 text-xs font-medium tracking-[0.2em] text-amber-200/80 uppercase">
                   <Mail className="h-3.5 w-3.5" />
                   Passwordless sign-in
                 </p>
                 <h1 className="max-w-lg text-4xl leading-tight font-semibold">
                   One clean checkpoint before the dashboard opens.
                 </h1>
-                  <p className="max-w-lg text-base leading-7 text-stone-300">
+                <p className="max-w-lg text-base leading-7 text-stone-300">
                   Enter the six-digit code from your inbox and we&apos;ll finish the sign-in flow
                   without ever asking for a password.
                 </p>
@@ -449,8 +447,8 @@ function EmailOtpVerificationContent() {
                 <div>
                   <p className="font-medium text-stone-100">One-time code only</p>
                   <p className="mt-1 text-sm leading-6 text-stone-400">
-                    Wrong entries count against the active code. After five misses you&apos;ll need a
-                    fresh send.
+                    Wrong entries count against the active code. After five misses you&apos;ll need
+                    a fresh send.
                   </p>
                 </div>
               </div>
@@ -517,7 +515,7 @@ function EmailOtpVerificationContent() {
                           onChange={(event) => handleDigitChange(index, event.target.value)}
                           onKeyDown={(event) => handleKeyDown(index, event)}
                           className={cn(
-                            "aspect-square w-full rounded-[1.15rem] border bg-stone-50 text-center text-2xl font-semibold text-stone-950 outline-none transition duration-200 sm:text-3xl",
+                            "aspect-square w-full rounded-[1.15rem] border bg-stone-50 text-center text-2xl font-semibold text-stone-950 transition duration-200 outline-none sm:text-3xl",
                             "focus:border-amber-500 focus:bg-white focus:shadow-[0_0_0_4px_rgba(245,158,11,0.15)]",
                             errorMessage || isInvalidated
                               ? "border-rose-400 bg-rose-50"
@@ -530,10 +528,14 @@ function EmailOtpVerificationContent() {
                     <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
                       <span className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-3 py-1.5 font-medium text-stone-700">
                         <Clock3 className="h-4 w-4" />
-                        {expirySeconds === 0 ? "Code expired" : `Expires in ${formatClock(expirySeconds)}`}
+                        {expirySeconds === 0
+                          ? "Code expired"
+                          : `Expires in ${formatClock(expirySeconds)}`}
                       </span>
                       {effectiveStatusMessage ? (
-                        <span className="text-sm leading-6 text-stone-600">{effectiveStatusMessage}</span>
+                        <span className="text-sm leading-6 text-stone-600">
+                          {effectiveStatusMessage}
+                        </span>
                       ) : null}
                     </div>
 
@@ -593,9 +595,9 @@ function EmailOtpVerificationContent() {
                             ? "Code invalidated"
                             : resendError
                               ? "Resend locked"
-                            : attemptsRemaining !== null
-                              ? attemptLabel
-                              : "Security reminder"}
+                              : attemptsRemaining !== null
+                                ? attemptLabel
+                                : "Security reminder"}
                         </p>
                         <p>
                           {isInvalidated
@@ -619,7 +621,7 @@ function EmailOtpVerificationFallback() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.92),_rgba(247,236,221,0.98)_35%,_rgba(243,227,205,1)_100%)] px-4 py-6">
       <div className="w-full max-w-lg rounded-[2rem] border border-stone-900/10 bg-white/90 p-8 text-center shadow-[0_28px_80px_rgba(120,53,15,0.18)]">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-amber-800/80">
+        <p className="text-sm font-medium tracking-[0.18em] text-amber-800/80 uppercase">
           Loading verification
         </p>
         <h1 className="mt-4 text-3xl font-semibold text-stone-950">Preparing your code screen</h1>

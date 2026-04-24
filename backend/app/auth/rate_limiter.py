@@ -41,4 +41,3 @@ class OTPSendRateLimiter:
             raise OTPSendRateLimitError(retry_after=ttl)
 
         return OTPSendRateLimitResult(count=count, retry_after=None)
-

@@ -20,7 +20,7 @@ export default function PrivacyPage() {
     <main className="app-shell min-h-screen px-4 py-6 sm:px-6 sm:py-8">
       <div className="mx-auto max-w-3xl">
         <section className="app-panel p-6 sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+          <p className="text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
             Legal
           </p>
           <h1 className="mt-3 text-[2rem] font-semibold tracking-[-0.04em] text-[var(--text)]">

@@ -185,7 +185,7 @@ function ActionCard({
 
         <div className="grid shrink-0 gap-2 sm:min-w-[150px]">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
               Price
             </p>
             <p className="mt-2 text-lg font-semibold text-[var(--text)]">
@@ -193,7 +193,7 @@ function ActionCard({
             </p>
           </div>
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
               Duration
             </p>
             <p className="mt-2 text-sm font-medium text-[var(--text)]">
@@ -376,21 +376,27 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
                 <div className="space-y-5">
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div className="app-subtle rounded-2xl p-4">
-                      <p className="text-sm font-semibold text-[var(--text)]">Economy-ready delivery</p>
+                      <p className="text-sm font-semibold text-[var(--text)]">
+                        Economy-ready delivery
+                      </p>
                       <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                         Built for teams and agents that need scoped work, escrow-backed execution,
                         and clean handoff quality.
                       </p>
                     </div>
                     <div className="app-subtle rounded-2xl p-4">
-                      <p className="text-sm font-semibold text-[var(--text)]">Circle settlement flow</p>
+                      <p className="text-sm font-semibold text-[var(--text)]">
+                        Circle settlement flow
+                      </p>
                       <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                         Funding and delivery milestones fit the platform&apos;s Circle-powered USDC
                         payment flow.
                       </p>
                     </div>
                     <div className="app-subtle rounded-2xl p-4">
-                      <p className="text-sm font-semibold text-[var(--text)]">Agent handoff friendly</p>
+                      <p className="text-sm font-semibold text-[var(--text)]">
+                        Agent handoff friendly
+                      </p>
                       <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                         Outputs are framed for downstream automation, review, or immediate reuse by
                         another specialist.
@@ -399,7 +405,10 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
                   </div>
 
                   {agent.fullDescription.map((paragraph) => (
-                    <p key={paragraph} className="text-sm leading-8 text-[var(--text-muted)] sm:text-[15px]">
+                    <p
+                      key={paragraph}
+                      className="text-sm leading-8 text-[var(--text-muted)] sm:text-[15px]"
+                    >
                       {paragraph}
                     </p>
                   ))}
@@ -473,13 +482,17 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
                     </section>
                   ) : null}
 
-                  {!insightsQuery.isLoading && !insightsQuery.isError && visibleReviews.length > 0 ? (
+                  {!insightsQuery.isLoading &&
+                  !insightsQuery.isError &&
+                  visibleReviews.length > 0 ? (
                     <div className="space-y-4">
                       {visibleReviews.map((review) => (
                         <article key={review.id} className="app-subtle rounded-[1.4rem] p-4 sm:p-5">
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                              <p className="font-semibold text-[var(--text)]">{review.reviewerName}</p>
+                              <p className="font-semibold text-[var(--text)]">
+                                {review.reviewerName}
+                              </p>
                               <p className="mt-1 text-sm text-[var(--text-muted)]">
                                 {review.company} · {review.jobTitle}
                               </p>
@@ -587,7 +600,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
 
                       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                         <section className="app-subtle rounded-[1.4rem] p-4 sm:p-5">
-                          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                          <h3 className="text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                             Delivery health
                           </h3>
                           <div className="mt-4 space-y-4">
@@ -612,7 +625,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
                         </section>
 
                         <section className="app-subtle rounded-[1.4rem] p-4 sm:p-5">
-                          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                          <h3 className="text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                             Response distribution
                           </h3>
                           <div className="mt-4 space-y-4">
@@ -703,7 +716,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
               <div className="mt-5 rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface-2)] p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Selected quote
                     </p>
                     <p className="mt-2 text-base font-semibold text-[var(--text)]">
@@ -719,7 +732,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Price
                     </p>
                     <p className="mt-2 text-lg font-semibold text-[var(--text)]">
@@ -727,7 +740,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
                     </p>
                   </div>
                   <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                       Estimated duration
                     </p>
                     <p className="mt-2 text-sm font-medium text-[var(--text)]">
@@ -782,7 +795,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
               <div className="mt-6 border-t border-[var(--border)] pt-5">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-[var(--primary)]" />
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  <h3 className="text-sm font-semibold tracking-[0.18em] text-[var(--text-muted)] uppercase">
                     Agent snapshot
                   </h3>
                 </div>

@@ -6,7 +6,9 @@ from fastapi.testclient import TestClient
 os.environ["APP_ENV"] = "testing"
 os.environ["DEBUG"] = "true"
 os.environ["SECRET_KEY"] = "test-secret"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_bay_test"
+os.environ["DATABASE_URL"] = (
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_bay_test"
+)
 os.environ["DATABASE_URL_SYNC"] = (
     "postgresql+psycopg2://postgres:postgres@localhost:5432/agentic_bay_test"
 )
@@ -26,9 +28,13 @@ def test_agent_analytics_service_calculates_consistent_sections_for_selected_ran
     assert result.summary.total_jobs > 0
     assert len(result.revenue_series) == 6
     assert round(sum(item.percentage for item in result.action_breakdown), 1) == 100.0
-    assert sum(item.count for item in result.response_time_distribution) == result.summary.total_jobs
+    assert (
+        sum(item.count for item in result.response_time_distribution) == result.summary.total_jobs
+    )
     assert len(result.reviews) == 5
-    assert result.reviews == sorted(result.reviews, key=lambda review: review.created_at, reverse=True)
+    assert result.reviews == sorted(
+        result.reviews, key=lambda review: review.created_at, reverse=True
+    )
 
 
 def test_agent_analytics_service_returns_recent_reviews_for_short_ranges() -> None:
@@ -37,7 +43,9 @@ def test_agent_analytics_service_returns_recent_reviews_for_short_ranges() -> No
     result = service.get_agent_analytics("northstar-research", "7d")
 
     assert len(result.reviews) == 5
-    assert all(review.created_at >= datetime(2026, 4, 16, 12, 0, tzinfo=UTC) for review in result.reviews)
+    assert all(
+        review.created_at >= datetime(2026, 4, 16, 12, 0, tzinfo=UTC) for review in result.reviews
+    )
 
 
 def test_agent_analytics_endpoint_returns_not_found_for_unknown_agent() -> None:
