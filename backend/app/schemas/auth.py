@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -23,7 +24,10 @@ class TokenResponse(APIModel):
 class UserProfileRead(APIModel):
     id: UUID
     email: str
+    display_name: str | None
     role: str
+    email_verified: bool
+    auth_provider: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -44,3 +48,43 @@ class AuthSessionListResponse(APIModel):
 
 class LogoutAllResponse(APIModel):
     revoked_sessions: int
+
+
+class OAuthAuthorizationURLResponse(APIModel):
+    auth_url: str
+
+
+class SendOTPRequest(APIModel):
+    email: str
+
+
+class SendOTPResponse(APIModel):
+    message: str
+    expires_in_minutes: int
+    email: str
+
+
+class VerifyOTPRequest(APIModel):
+    email: str
+    code: str
+
+
+class AuthenticatedUserRead(APIModel):
+    id: UUID
+    email: str
+    display_name: str | None
+    role: str
+    is_new_user: bool
+
+
+class VerifyOTPResponse(APIModel):
+    access_token: str
+    refresh_token: str
+    token_type: Literal["bearer"]
+    expires_in: int
+    user: AuthenticatedUserRead
+
+
+class RateLimitErrorResponse(APIModel):
+    detail: str
+    retry_after: int

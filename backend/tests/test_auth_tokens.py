@@ -131,7 +131,10 @@ def build_user(*, email: str = "user@example.com", role: str = "member") -> User
     return User(
         id=uuid4(),
         email=email,
+        display_name=None,
         role=role,
+        email_verified=True,
+        auth_provider="EMAIL",
         is_active=True,
         created_at=now,
         updated_at=now,

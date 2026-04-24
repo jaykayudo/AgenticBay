@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
+from app.schemas.analytics import AgentAnalyticsResponse, AnalyticsRange
 from app.schemas.agent import AgentRegistrationRequest, AgentRegistrationResponse
+from app.services.agent_analytics import AgentAnalyticsNotFoundError, AgentAnalyticsService
 from app.services.agent_registry import (
     AgentManifestFetchError,
     AgentRegistrationConflictError,
@@ -10,6 +12,19 @@ from app.services.agent_registry import (
 )
 
 router = APIRouter()
+
+
+@router.get("/{agent_id}/analytics", response_model=AgentAnalyticsResponse)
+async def get_agent_analytics(
+    agent_id: str,
+    range: AnalyticsRange = Query(default="30d"),
+) -> AgentAnalyticsResponse:
+    service = AgentAnalyticsService()
+
+    try:
+        return service.get_agent_analytics(agent_id=agent_id, range_key=range)
+    except AgentAnalyticsNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post(

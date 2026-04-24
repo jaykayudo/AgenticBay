@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
+    # OAuth sign-in
+    GOOGLE_AUTH_URL: str | None = None
+    FACEBOOK_AUTH_URL: str | None = None
+
+    # Email OTP auth
+    EMAIL_OTP_EXPIRE_SECONDS: int = 60 * 10
+    EMAIL_OTP_MAX_ATTEMPTS: int = 5
+    EMAIL_OTP_RATE_LIMIT_WINDOW_SECONDS: int = 60 * 15
+    EMAIL_OTP_RATE_LIMIT_MAX_REQUESTS: int = 3
+
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"

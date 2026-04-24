@@ -15,12 +15,20 @@ class User(BaseModel):
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(String(320), nullable=False, unique=True, index=True)
+    display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     role: Mapped[str] = mapped_column(
         String(64),
         nullable=False,
         default="user",
         server_default=text("'user'"),
     )
+    email_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
+    auth_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
