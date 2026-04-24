@@ -16,22 +16,30 @@ from app.models.base import BaseModel
 if TYPE_CHECKING:
     from app.models.agents import Agent
     from app.models.jobs import Job
-    from app.models.sessions import Session
     from app.models.users import User
+    from app.models.wallets import EscrowWallet
 
 
 class InvoiceStatus(enum.StrEnum):
-    PENDING = "PENDING"
-    PAID = "PAID"
-    DISBURSED = "DISBURSED"
-    REFUNDED = "REFUNDED"
-    EXPIRED = "EXPIRED"
+    PENDING = "PENDING"  # created, awaiting payment
+    PAYMENT_CHECKING = "PAYMENT_CHECKING"  # verifying receipt
+    PENDING_RELEASE = "PENDING_RELEASE"  # paid, awaiting job completion
+    DISBURSING = "DISBURSING"  # disbursement in progress
+    DISBURSED = "DISBURSED"  # funds released
+    REFUNDED = "REFUNDED"  # refunded to payer
+    EXPIRED = "EXPIRED"  # unpaid and past expiry
+    FAILED = "FAILED"  # any unrecoverable failure
 
 
 class Invoice(BaseModel):
     __tablename__ = "invoices"
 
-    # One-to-one with Job
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     job_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("jobs.id", ondelete="CASCADE"),
@@ -39,27 +47,30 @@ class Invoice(BaseModel):
         nullable=False,
         index=True,
     )
-    session_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("sessions.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    buyer_id: Mapped[uuid.UUID] = mapped_column(
+    payer_user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
-    agent_id: Mapped[uuid.UUID] = mapped_column(
+    service_agent_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("agents.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
+    # Nullable until acquire_wallet assigns one
+    escrow_wallet_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("escrow_wallets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
-    # Amount in USDC with 6 decimal places
-    amount: Mapped[Decimal] = mapped_column(Numeric(precision=20, scale=6), nullable=False)
+    # Financials
+    amount: Mapped[Decimal] = mapped_column(Numeric(precision=18, scale=6), nullable=False)
+    marketplace_fee: Mapped[Decimal] = mapped_column(Numeric(precision=18, scale=6), nullable=False)
+    agent_payout: Mapped[Decimal] = mapped_column(Numeric(precision=18, scale=6), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="USDC", nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -70,35 +81,41 @@ class Invoice(BaseModel):
         index=True,
     )
 
-    # On-chain identity — bytes32 invoice ID stored as 0x-prefixed hex string
-    onchain_invoice_id: Mapped[str | None] = mapped_column(
-        String(66), unique=True, nullable=True, index=True
-    )
+    # Wallet addresses for the payment
+    payer_wallet_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payee_wallet_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    marketplace_wallet_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    # The deployed escrow contract that holds funds for this invoice
-    invoice_contract_address: Mapped[str | None] = mapped_column(String(42), nullable=True)
-
-    # Function name the user agent must call on the contract to pay
-    payment_function_name: Mapped[str] = mapped_column(
-        String(100), default="pay_invoice", nullable=False
-    )
-
-    # On-chain transaction hashes — each step in the invoice lifecycle
-    contract_tx_hash: Mapped[str | None] = mapped_column(String(66), nullable=True)
-    payment_tx_hash: Mapped[str | None] = mapped_column(String(66), nullable=True)
-    verification_tx_hash: Mapped[str | None] = mapped_column(String(66), nullable=True)
-    disbursement_tx_hash: Mapped[str | None] = mapped_column(String(66), nullable=True)
-    refund_tx_hash: Mapped[str | None] = mapped_column(String(66), nullable=True)
-
+    # Timestamps
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     disbursed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    refunded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Payment transaction (user → escrow)
+    payment_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payment_tx_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payment_tx_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Agent disbursement transaction (escrow → agent)
+    agent_disbursement_tx_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    agent_disbursement_tx_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Marketplace fee transaction (escrow → marketplace)
+    fee_disbursement_tx_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    fee_disbursement_tx_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Refund transaction (escrow → payer)
+    refund_tx_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    refund_tx_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relationships
     job: Mapped[Job] = relationship("Job", back_populates="invoice")
-    session: Mapped[Session] = relationship("Session", foreign_keys=[session_id])
-    buyer: Mapped[User] = relationship("User", foreign_keys=[buyer_id])
-    agent: Mapped[Agent] = relationship("Agent", foreign_keys=[agent_id])
+    payer_user: Mapped[User] = relationship("User", foreign_keys=[payer_user_id])
+    service_agent: Mapped[Agent] = relationship("Agent", foreign_keys=[service_agent_id])
+    escrow_wallet: Mapped[EscrowWallet | None] = relationship(
+        "EscrowWallet", foreign_keys=[escrow_wallet_id], back_populates="invoices"
+    )
 
     def __repr__(self) -> str:
         return (

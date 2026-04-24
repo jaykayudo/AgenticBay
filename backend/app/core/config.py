@@ -63,11 +63,22 @@ class Settings(BaseSettings):
     # Orchestrator
     ORCHESTRATOR_WS_URL: str = "ws://localhost:8000"
 
-    # Web3
-    RPC_URL: str = ""
-    INVOICE_CONTRACT_ADDRESS: str = ""
-    INVOICE_CONTRACT_ABI: str = ""
-    ORCHESTRATOR_PRIVATE_KEY: str = ""
+    # Circle Wallets API
+    CIRCLE_API_KEY: str = ""
+    CIRCLE_BASE_URL: str = "https://api-sandbox.circle.com"
+    # 32-byte hex string — register once with Circle, never changes
+    CIRCLE_ENTITY_SECRET: str = ""
+    CIRCLE_WALLET_SET_ID: str = ""
+
+    # Marketplace treasury
+    MARKETPLACE_WALLET_ADDRESS: str = ""
+    MARKETPLACE_WALLET_ID: str = ""
+
+    MARKETPLACE_FEE_PERCENT: float = 5.0
+    BLOCKCHAIN: str = "ARC-TESTNET"
+
+    # HMAC-SHA256 secret used to verify inbound Circle webhook signatures
+    CIRCLE_WEBHOOK_SECRET: str = ""
 
     @property
     def is_production(self) -> bool:

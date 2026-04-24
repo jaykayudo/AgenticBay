@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 
 import aiohttp
 
-from app.agents.orchestrator.invoice import InvoiceService
 from app.agents.orchestrator.llm import OrchestratorLLM
 from app.agents.orchestrator.schema import (
     AgentSearchResult,
@@ -24,6 +23,7 @@ from app.agents.orchestrator.schema import (
     ErrorResponseData,
     # session
     JobSessionState,
+    PaymentInfo,
     PaymentResponse,
     PaymentResponseData,
     PaymentSuccessfulRequest,
@@ -49,6 +49,7 @@ from app.agents.orchestrator.schema import (
 )
 from app.agents.orchestrator.session_store import SessionStore
 from app.agents.orchestrator.vector_search import VectorSearch
+from app.services.invoice_service import InvoiceService
 from app.websocket.manager import session_manager
 
 if TYPE_CHECKING:
@@ -68,28 +69,21 @@ class OrchestratorAgent:
     """
 
     def __init__(self) -> None:
-        self.session_store = SessionStore()  # Redis-backed
-        self.vector_search = VectorSearch()  # pgvector / Pinecone
-        self.invoice_svc = InvoiceService()  # Web3 contract calls
-        self.llm = OrchestratorLLM()  # Claude / GPT wrapper
-        self.http_timeout = aiohttp.ClientTimeout(total=30)  # only for /capabilities + /connect
+        self.session_store = SessionStore()
+        self.vector_search = VectorSearch()
+        self.invoice_svc = InvoiceService()
+        self.llm = OrchestratorLLM()
+        self.http_timeout = aiohttp.ClientTimeout(total=30)
 
     # ──────────────────────────────────────────
-    # ENTRY POINT: called by WebSocket handler
-    # on every incoming message from user agent
+    # ENTRY POINT: user agent messages
     # ──────────────────────────────────────────
     async def handle_message(
         self,
         session_id: str,
         raw_message: str,
-        send: SendFn,  # async fn to push message back to user agent
+        send: SendFn,
     ) -> None:
-        """
-        Main message router.
-        Parses the incoming text message and dispatches
-        to the appropriate handler.
-        """
-        # Load session state
         state = await self.session_store.get(session_id)
         if not state:
             await send(
@@ -102,7 +96,6 @@ class OrchestratorAgent:
             )
             return
 
-        # Parse message
         try:
             message = parse_user_agent_message(raw_message)
         except ValueError as e:
@@ -114,7 +107,6 @@ class OrchestratorAgent:
             )
             return
 
-        # Dispatch to handler
         handlers: dict[str, Any] = {
             "SEARCH_AGENT": self._handle_search,
             "CONNECT_AGENT": self._handle_connect,
@@ -136,16 +128,12 @@ class OrchestratorAgent:
             )
             return
 
-        # Update last activity
         state.last_activity_at = datetime.now(UTC).isoformat()
         await self.session_store.save(state)
-
-        # Run handler
         await handler(state, message, send)
 
     # ──────────────────────────────────────────
-    # ENTRY POINT: called by the service WS handler
-    # on every incoming message from the service agent
+    # ENTRY POINT: service agent messages
     # ──────────────────────────────────────────
     async def handle_service_message(self, session_id: str, raw: str) -> None:
         state = await self.session_store.get(session_id)
@@ -161,7 +149,6 @@ class OrchestratorAgent:
 
         parsed = parse_service_agent_response(data)
 
-        # PROGRESS updates are forwarded directly to the user as-is
         if isinstance(parsed, ServiceProgressUpdate):
             await session_manager.send_to_user(
                 session_id,
@@ -186,22 +173,15 @@ class OrchestratorAgent:
     async def _handle_search(
         self, state: JobSessionState, message: SearchAgentRequest, send: SendFn
     ) -> None:
-
         state.phase = SessionPhase.SEARCHING
         await self.session_store.save(state)
 
         try:
-            # LLM enriches the search query
             enriched_query = await self.llm.enrich_search_query(message.data.message)
-
-            # Vector search over agent descriptions
             raw_results = await self.vector_search.search(query=enriched_query, top_k=10)
-
-            # LLM reranks results
             reranked = await self.llm.rerank_agents(
                 original_query=message.data.message, agents=raw_results
             )
-
             agents = [
                 AgentSearchResult(
                     id=str(a["id"]),
@@ -212,15 +192,13 @@ class OrchestratorAgent:
                 )
                 for a in reranked
             ]
-
             await send(
                 SearchAgentResponse(
                     type="SEARCH_AGENT", data=SearchAgentResponseData(agents=agents)
                 ).to_text()
             )
-
         except Exception as e:
-            logger.error(f"Search failed: {e}")
+            logger.error("Search failed: %s", e)
             await send(
                 ErrorResponse(
                     type="ERROR",
@@ -236,13 +214,10 @@ class OrchestratorAgent:
     async def _handle_connect(
         self, state: JobSessionState, message: ConnectAgentRequest, send: SendFn
     ) -> None:
-
         state.phase = SessionPhase.CONNECTING
         await self.session_store.save(state)
 
         agent_id = message.data.agent_id
-
-        # Fetch agent from DB
         agent = await self._get_agent_from_db(agent_id)
         if not agent:
             await send(
@@ -255,7 +230,6 @@ class OrchestratorAgent:
             )
             return
 
-        # Fetch capability document from service agent
         capabilities = await self._fetch_capabilities(agent.base_url)
         if not capabilities:
             await send(
@@ -268,16 +242,17 @@ class OrchestratorAgent:
             )
             return
 
-        # Update session state
         state.connected_agent_id = agent_id
         state.agent_endpoint = agent.base_url
         state.agent_wallet_address = agent.wallet_address
         state.agent_capabilities = capabilities
         state.agent_orchestrator_key = agent.orchestrator_api_key
         state.phase = SessionPhase.ACTIVE
+
+        # Create the Job record now that we know which agent is connected
+        state.job_id = await self._create_job_in_db(state.session_id, state.user_id, agent_id)
         await self.session_store.save(state)
 
-        # Tell service agent to dial into our WS room
         connected = await self._send_connect_request(
             endpoint=agent.base_url,
             session_id=state.session_id,
@@ -307,10 +282,7 @@ class OrchestratorAgent:
         )
 
     # ──────────────────────────────────────────
-    # HANDLER: SERVICE_AGENT
-    # The core infinite loop handler.
-    # Forwards user command to service agent,
-    # interprets response, acts accordingly.
+    # HANDLER: SERVICE_AGENT (forward to service)
     # ──────────────────────────────────────────
     async def _handle_service_request(
         self, state: JobSessionState, message: ServiceAgentRequest, send: SendFn
@@ -343,8 +315,6 @@ class OrchestratorAgent:
             )
             return
 
-        # Forward command to service agent over its WS room.
-        # Response arrives asynchronously in handle_service_message.
         invoke_request = ServiceAgentInvokeRequest(
             command=message.data.command,
             arguments=message.data.arguments,
@@ -360,36 +330,36 @@ class OrchestratorAgent:
         response: ServicePaymentRequest | ServiceJobDone | ServiceGenericResponse,
         send: SendFn,
     ) -> None:
-
-        # ── PAYMENT REQUEST ──
         if isinstance(response, ServicePaymentRequest):
             await self._handle_payment_request(state, response, send)
-
-        # ── JOB DONE ──
         elif isinstance(response, ServiceJobDone):
             await self._handle_job_done(state, response, send)
-
-        # ── GENERIC RESPONSE — forward to user agent ──
         else:
             await send(ServiceAgentResponse(type="SERVICE_AGENT", data=response.data).to_text())
 
     # ──────────────────────────────────────────
     # PAYMENT REQUEST FLOW
-    # Service agent wants payment →
-    # orchestrator creates invoice →
-    # sends invoice details to user agent
     # ──────────────────────────────────────────
     async def _handle_payment_request(
         self, state: JobSessionState, response: ServicePaymentRequest, send: SendFn
     ) -> None:
-
         state.phase = SessionPhase.AWAITING_PAYMENT
         await self.session_store.save(state)
 
+        if not state.job_id:
+            await send(
+                ErrorResponse(
+                    type="ERROR",
+                    data=ErrorResponseData(
+                        error_type="state_error",
+                        message="No active job found for this session",
+                    ),
+                ).to_text()
+            )
+            return
+
         amount = float(response.data.amount)
         description = response.data.description
-
-        # Use agent's registered wallet if not specified
         payee_address = response.data.address or state.agent_wallet_address
 
         if not payee_address:
@@ -403,16 +373,18 @@ class OrchestratorAgent:
             )
             return
 
-        # Create escrow invoice via smart contract
-        invoice = await self.invoice_svc.create_invoice(
-            session_id=state.session_id,
-            payer_address=await self._get_user_wallet_address(state.user_id),
-            payee_address=payee_address,
-            amount=amount,
-            description=description,
-        )
-
-        if not invoice:
+        try:
+            invoice, escrow_wallet = await self.invoice_svc.create_invoice(
+                session_id=state.session_id,
+                job_id=state.job_id,
+                payer_user_id=state.user_id,
+                service_agent_id=state.connected_agent_id or "",
+                amount=amount,
+                description=description,
+                payee_wallet_address=payee_address,
+            )
+        except Exception as exc:
+            logger.error("Invoice creation failed session=%s: %s", state.session_id, exc)
             await send(
                 ErrorResponse(
                     type="ERROR",
@@ -423,21 +395,21 @@ class OrchestratorAgent:
             )
             return
 
-        # Save pending invoice to state
-        state.pending_invoice_id = invoice["invoice_id"]
+        state.pending_invoice_id = str(invoice.id)
         await self.session_store.save(state)
 
-        # Send invoice details to user agent
+        from app.core.config import settings as _settings
+
         await send(
             PaymentResponse(
                 type="PAYMENT",
                 data=PaymentResponseData(
                     amount=amount,
                     description=description,
-                    contract_data=ContractData(
-                        invoice_id=invoice["invoice_id"],
-                        invoice_contract=invoice["contract_address"],
-                        function_name="payInvoice",
+                    payment_info=PaymentInfo(
+                        invoice_id=str(invoice.id),
+                        invoice_wallet=escrow_wallet.wallet_address,
+                        blockchain=_settings.BLOCKCHAIN,
                     ),
                 ),
             ).to_text()
@@ -445,9 +417,6 @@ class OrchestratorAgent:
 
     # ──────────────────────────────────────────
     # HANDLER: PAYMENT_SUCCESSFUL
-    # User agent confirms payment made →
-    # orchestrator verifies on-chain →
-    # notifies service agent to continue
     # ──────────────────────────────────────────
     async def _handle_payment_successful(
         self, state: JobSessionState, message: PaymentSuccessfulRequest, send: SendFn
@@ -458,59 +427,53 @@ class OrchestratorAgent:
 
         invoice_id = message.data.invoice_id
 
-        # Verify payment on-chain
-        is_paid = await self.invoice_svc.verify_payment(invoice_id)
-
-        if not is_paid:
+        confirmed = await self.invoice_svc.confirm_payment(invoice_id)
+        if not confirmed:
             await send(
                 ErrorResponse(
                     type="ERROR",
                     data=ErrorResponseData(
                         error_type="payment_error",
-                        message="Payment has not been confirmed on-chain",
+                        message=(
+                            "Payment not yet received in escrow wallet. "
+                            "Please wait a moment and try again."
+                        ),
                     ),
                 ).to_text()
             )
             return
 
-        # Track paid invoice in session
         state.paid_invoice_ids.append(invoice_id)
         state.pending_invoice_id = None
         state.phase = SessionPhase.ACTIVE
         await self.session_store.save(state)
 
-        # Confirm to user agent first
         await send(
             PaymentSuccessfulResponse(
-                type="PAYMENT_SUCCESSFUL", data=PaymentSuccessfulResponseData(invoice_id=invoice_id)
+                type="PAYMENT_SUCCESSFUL",
+                data=PaymentSuccessfulResponseData(invoice_id=invoice_id),
             ).to_text()
         )
 
-        # Use LLM to find the correct payment_confirmed command
-        # from the capability document, then notify service agent over WS
+        # Notify service agent via LLM-resolved payment command
         capabilities = state.agent_capabilities or ""
         payment_command = await self.llm.find_payment_success_command(capabilities=capabilities)
-
         await self._send_to_service(
             state.session_id,
             ServiceAgentInvokeRequest(
                 command=str(payment_command["command"]),
                 arguments={
                     "invoice_id": invoice_id,
-                    "invoice_contract": self.invoice_svc.contract_address,
                 },
             ),
         )
 
     # ──────────────────────────────────────────
-    # JOB DONE HANDLER
-    # Service agent signals completion →
-    # orchestrator sends close appeal to user
+    # JOB DONE
     # ──────────────────────────────────────────
     async def _handle_job_done(
         self, state: JobSessionState, response: ServiceJobDone, send: SendFn
     ) -> None:
-
         state.phase = SessionPhase.CLOSING
         await self.session_store.save(state)
 
@@ -523,9 +486,6 @@ class OrchestratorAgent:
 
     # ──────────────────────────────────────────
     # HANDLER: CLOSE
-    # User agent confirms session close →
-    # disburse all paid invoices →
-    # close session
     # ──────────────────────────────────────────
     async def _handle_close(
         self, state: JobSessionState, message: CloseRequest, send: SendFn
@@ -537,11 +497,10 @@ class OrchestratorAgent:
         state.phase = SessionPhase.CLOSING
         await self.session_store.save(state)
 
-        # Disburse all paid invoices for this session via smart contract
         if state.paid_invoice_ids:
-            await self.invoice_svc.disburse_session_invoices(session_id=state.session_id)
+            results = await self.invoice_svc.disburse_session_invoices(session_id=state.session_id)
+            logger.info("Disbursed %d invoices for session %s", len(results), state.session_id)
 
-        # Notify service agent if still connected
         if state.paid_invoice_ids and session_manager.is_service_connected(state.session_id):
             await self._send_to_service(
                 state.session_id,
@@ -554,15 +513,12 @@ class OrchestratorAgent:
                 ),
             )
 
-        # Mark session as closed
         state.phase = SessionPhase.CLOSED
         await self.session_store.save(state)
-
-        # Persist to DB
         await self._mark_job_completed(state)
 
     # ──────────────────────────────────────────
-    # SEND COMMAND TO SERVICE AGENT (WebSocket)
+    # SEND TO SERVICE (WebSocket)
     # ──────────────────────────────────────────
     async def _handle_public_service_request(
         self, state: JobSessionState, message: ServiceAgentRequest, send: SendFn
@@ -880,9 +836,7 @@ class OrchestratorAgent:
         await session_manager.send_to_service(session_id, message.to_text())
 
     # ──────────────────────────────────────────
-    # CONNECT HANDSHAKE TO SERVICE AGENT (HTTP)
-    # POST /connect — tells the service how to
-    # dial back into our WS service room.
+    # CONNECT HANDSHAKE (HTTP POST /connect)
     # ──────────────────────────────────────────
     async def _send_connect_request(
         self,
@@ -900,7 +854,6 @@ class OrchestratorAgent:
             orchestrator_ws_url=settings.ORCHESTRATOR_WS_URL,
             orchestrator_key=orchestrator_key,
         )
-
         try:
             async with aiohttp.ClientSession(timeout=self.http_timeout) as http:
                 async with http.post(
@@ -914,9 +867,7 @@ class OrchestratorAgent:
                     if resp.status == 200:
                         return True
                     logger.error(
-                        "Service agent /connect returned %s  session=%s",
-                        resp.status,
-                        session_id,
+                        "Service agent /connect returned %s  session=%s", resp.status, session_id
                     )
                     return False
         except Exception as exc:
@@ -924,12 +875,10 @@ class OrchestratorAgent:
             return False
 
     # ──────────────────────────────────────────
-    # FETCH CAPABILITIES
-    # GET /capabilities
+    # FETCH CAPABILITIES (HTTP GET /capabilities)
     # ──────────────────────────────────────────
     async def _fetch_capabilities(self, endpoint: str) -> str | None:
         url = f"{endpoint.rstrip('/')}/capabilities"
-
         try:
             async with aiohttp.ClientSession(timeout=self.http_timeout) as session:
                 async with session.get(url) as resp:
@@ -939,11 +888,11 @@ class OrchestratorAgent:
                         return str(msg) if msg is not None else None
                     return None
         except Exception as e:
-            logger.error(f"Failed to fetch capabilities from {endpoint}: {e}")
+            logger.error("Failed to fetch capabilities from %s: %s", endpoint, e)
             return None
 
     # ──────────────────────────────────────────
-    # HELPERS
+    # DB HELPERS
     # ──────────────────────────────────────────
     async def _get_agent_from_db(self, agent_id: str) -> Agent | None:
         from app.core.database import AsyncSessionLocal
@@ -951,6 +900,20 @@ class OrchestratorAgent:
 
         async with AsyncSessionLocal() as session:
             return await AgentRepository(session).get_by_id(uuid.UUID(agent_id))
+
+    async def _create_job_in_db(self, session_id: str, user_id: str, agent_id: str) -> str:
+        """Create a Job record and return its UUID string."""
+        from app.core.database import AsyncSessionLocal
+        from app.repositories.job_repo import JobRepository
+
+        async with AsyncSessionLocal() as session:
+            job = await JobRepository(session).create_job(
+                session_id=uuid.UUID(session_id),
+                buyer_id=uuid.UUID(user_id),
+                agent_id=uuid.UUID(agent_id),
+            )
+            await session.commit()
+            return str(job.id)
 
     async def _get_user_wallet_address(self, user_id: str) -> str:
         from app.core.database import AsyncSessionLocal
@@ -963,9 +926,11 @@ class OrchestratorAgent:
         return user.wallet_address
 
     async def _mark_job_completed(self, state: JobSessionState) -> None:
+        if not state.job_id:
+            return
         from app.core.database import AsyncSessionLocal
         from app.repositories.job_repo import JobRepository
 
         async with AsyncSessionLocal() as session:
-            await JobRepository(session).mark_completed(uuid.UUID(state.session_id))
+            await JobRepository(session).mark_completed(uuid.UUID(state.job_id))
             await session.commit()

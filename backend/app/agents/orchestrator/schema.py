@@ -148,16 +148,16 @@ class ConnectResponse(BaseMessage):
     data: ConnectResponseData
 
 
-class ContractData(BaseModel):
+class PaymentInfo(BaseModel):
     invoice_id: str
-    invoice_contract: str  # contract address
-    function_name: str  # e.g "pay_invoice"
+    invoice_wallet: str  # escrow wallet address — send USDC directly here
+    blockchain: str = "ARC-TESTNET"
 
 
 class PaymentResponseData(BaseModel):
     amount: float
     description: str
-    contract_data: ContractData
+    payment_info: PaymentInfo
 
 
 class PaymentResponse(BaseMessage):
@@ -372,6 +372,7 @@ class JobSessionState(BaseModel):
     # Identity
     session_id: str
     user_id: str
+    job_id: str | None = None  # set after Job is created in DB during CONNECT_AGENT
 
     # Phase
     phase: SessionPhase = SessionPhase.STARTED
