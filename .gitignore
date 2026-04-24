@@ -35,3 +35,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+
+issue_descriptions.md
+reviews.md
