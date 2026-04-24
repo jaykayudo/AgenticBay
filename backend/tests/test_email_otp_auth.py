@@ -38,7 +38,7 @@ from app.auth.providers.email_otp import (
 from app.auth.rate_limiter import OTPSendRateLimiter
 from app.main import app
 from app.models.auth_session import AuthSession
-from app.models.user import User
+from app.models.users import User, UserRole, UserStatus
 
 
 class FakeScalarResult:
@@ -224,22 +224,23 @@ class FakeCircleWalletService(CircleWalletService):
 def build_user(
     *,
     email: str = "user@example.com",
-    role: str = "BUYER",
+    role: UserRole = UserRole.BUYER,
     email_verified: bool = True,
     auth_provider: str | None = "EMAIL",
 ) -> User:
     now = datetime.now(UTC)
-    return User(
+    user = User(
         id=uuid4(),
         email=email,
         display_name=None,
         role=role,
+        status=UserStatus.ACTIVE,
         email_verified=email_verified,
-        auth_provider=auth_provider,
-        is_active=True,
         created_at=now,
         updated_at=now,
     )
+    user.auth_provider = auth_provider  # type: ignore[attr-defined]
+    return user
 
 
 def build_provider(
@@ -390,7 +391,6 @@ def test_verify_otp_endpoint_creates_new_user_and_triggers_circle_wallet() -> No
 
     created_user = next(iter(db.users.values()))
     assert created_user.email_verified is True
-    assert created_user.auth_provider == "EMAIL"
     assert wallet_service.calls == [(str(created_user.id), created_user.email)]
     assert len(db.sessions) == 1
     assert not asyncio.run(provider.otp_store.code_exists(created_user.email))
@@ -434,7 +434,6 @@ def test_verify_otp_logs_in_existing_user_regardless_of_provider() -> None:
     assert body["user"]["id"] == str(existing_user.id)
     assert body["user"]["is_new_user"] is False
     assert wallet_service.calls == []
-    assert db.users[existing_user.id].auth_provider == "GOOGLE"
     assert db.users[existing_user.id].email_verified is True
     assert len(db.sessions) == 1
 

@@ -11,8 +11,12 @@ from app.core.database import asyncpg_connection
 
 class VectorSearch:
     def __init__(self) -> None:
-        # Single client instance reused for all calls
-        self._vo = voyageai.AsyncClient()  # type: ignore[attr-defined]
+        self._vo: voyageai.AsyncClient | None = None  # type: ignore[attr-defined]
+
+    def _client(self) -> voyageai.AsyncClient:  # type: ignore[attr-defined]
+        if self._vo is None:
+            self._vo = voyageai.AsyncClient()  # type: ignore[attr-defined]
+        return self._vo
 
     # ──────────────────────────────────────────
     # PUBLIC: Main search method
@@ -77,12 +81,12 @@ class VectorSearch:
     # ──────────────────────────────────────────
     async def _embed(self, text: str) -> list[float]:
         """Embed a search query (input_type='query')."""
-        result = await self._vo.embed(texts=[text], model="voyage-3", input_type="query")
+        result = await self._client().embed(texts=[text], model="voyage-3", input_type="query")
         return [float(x) for x in result.embeddings[0]]
 
     async def _embed_document(self, text: str) -> list[float]:
         """Embed a document for indexing (input_type='document')."""
-        result = await self._vo.embed(texts=[text], model="voyage-3", input_type="document")
+        result = await self._client().embed(texts=[text], model="voyage-3", input_type="document")
         return [float(x) for x in result.embeddings[0]]
 
     # ──────────────────────────────────────────

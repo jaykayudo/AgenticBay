@@ -11,7 +11,7 @@ from app.auth.otp_store import OTPStore, generate_otp_code, normalize_email
 from app.auth.rate_limiter import OTPSendRateLimiter
 from app.auth.session_manager import IssuedTokenPair, SessionManager
 from app.core.config import settings
-from app.models.users import User
+from app.models.users import User, UserStatus
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +89,8 @@ class EmailOTPProvider:
                 email=normalized_email,
                 display_name=None,
                 role="BUYER",
+                status=UserStatus.ACTIVE,
                 email_verified=True,
-                auth_provider="EMAIL",
-                is_active=True,
             )
             self.db.add(user)
             await self.db.flush()

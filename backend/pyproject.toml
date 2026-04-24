@@ -29,6 +29,7 @@ dependencies = [
     "voyageai>=0.3.7",
     "jwt>=1.4.0",
     "aiosqlite>=0.22.1",
+    "numpy>=2.4.4",
 ]
 
 [project.optional-dependencies]

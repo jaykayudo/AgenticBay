@@ -13,7 +13,7 @@ from app.auth.jwt import (
     InvalidAccessTokenError,
     decode_access_token,
 )
-from app.models.users import User
+from app.models.users import User, UserStatus
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -49,7 +49,7 @@ async def get_current_user(
         ) from exc
 
     user = await db.get(User, user_id)
-    if user is None or not user.is_active:
+    if user is None or user.status != UserStatus.ACTIVE:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Current user could not be found.",

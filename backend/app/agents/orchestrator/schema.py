@@ -5,7 +5,7 @@ import enum
 import json
 from typing import Any, Literal, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ─────────────────────────────────────────────────
@@ -14,8 +14,7 @@ from pydantic import BaseModel, Field
 class BaseMessage(BaseModel):
     """Root for all messages in the system"""
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
     def to_text(self) -> str:
         """
@@ -154,17 +153,10 @@ class PaymentInfo(BaseModel):
     blockchain: str = "ARC-TESTNET"
 
 
-class ContractData(BaseModel):
-    invoice_id: str
-    invoice_contract: str
-    function_name: str = "payInvoice"
-
-
 class PaymentResponseData(BaseModel):
     amount: float
     description: str
-    payment_info: PaymentInfo | None = None
-    contract_data: ContractData | None = None
+    payment_info: PaymentInfo
 
 
 class PaymentResponse(BaseMessage):
@@ -400,18 +392,6 @@ class JobSessionState(BaseModel):
     auth_token: str = ""
     created_at: str = ""
     last_activity_at: str = ""
-
-    # Public marketplace session fields used by the web marketplace flow
-    public_mode: bool = False
-    public_job_started: bool = False
-    public_result: dict[str, Any] = Field(default_factory=dict)
-    marketplace_agent_slug: str | None = None
-    marketplace_agent_name: str | None = None
-    marketplace_action_id: str | None = None
-    marketplace_action_name: str | None = None
-    marketplace_input_summary: str | None = None
-    marketplace_price_usdc: int = 0
-    marketplace_amount_locked_usdc: int = 0
 
 
 # ─────────────────────────────────────────────────

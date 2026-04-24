@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from app.auth.jwt import create_access_token
 from app.core.config import settings
 from app.models.auth_session import AuthSession
-from app.models.users import User
+from app.models.users import User, UserStatus
 
 
 class SessionManagerError(Exception):
@@ -126,7 +126,7 @@ class SessionManager:
             raise InvalidRefreshTokenError("Refresh token has expired.")
 
         user = session.user
-        if user is None or not user.is_active:
+        if user is None or user.status != UserStatus.ACTIVE:
             self._revoke_session(session, reason="user_inactive", revoked_at=now)
             raise InvalidRefreshTokenError("User is inactive.")
 

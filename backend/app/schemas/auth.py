@@ -26,9 +26,8 @@ class UserProfileRead(APIModel):
     email: str
     display_name: str | None
     role: str
+    status: str
     email_verified: bool
-    auth_provider: str | None
-    is_active: bool
     created_at: datetime
     updated_at: datetime
 

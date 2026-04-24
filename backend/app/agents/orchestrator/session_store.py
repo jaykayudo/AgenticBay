@@ -2,14 +2,14 @@
 import redis.asyncio as aioredis
 
 from app.agents.orchestrator.schema import JobSessionState
-from app.core.config import settings
 
+REDIS_URL = "redis://localhost:6379"
 SESSION_TTL = 60 * 60 * 24  # 24 hours
 
 
 class SessionStore:
     def __init__(self) -> None:
-        self.redis = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        self.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
 
     async def save(self, state: JobSessionState) -> None:
         await self.redis.set(f"session:{state.session_id}", state.model_dump_json(), ex=SESSION_TTL)

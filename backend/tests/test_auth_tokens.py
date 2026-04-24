@@ -25,7 +25,7 @@ from app.auth.jwt import create_access_token, decode_access_token
 from app.auth.session_manager import RefreshTokenReuseDetectedError, SessionManager
 from app.main import app
 from app.models.auth_session import AuthSession
-from app.models.user import User
+from app.models.users import User, UserRole, UserStatus
 
 
 class FakeScalarResult:
@@ -128,16 +128,15 @@ class FakeAsyncSessionStore:
         return value
 
 
-def build_user(*, email: str = "user@example.com", role: str = "member") -> User:
+def build_user(*, email: str = "user@example.com", role: UserRole = UserRole.BUYER) -> User:
     now = datetime.now(UTC)
     return User(
         id=uuid4(),
         email=email,
         display_name=None,
         role=role,
+        status=UserStatus.ACTIVE,
         email_verified=True,
-        auth_provider="EMAIL",
-        is_active=True,
         created_at=now,
         updated_at=now,
     )
