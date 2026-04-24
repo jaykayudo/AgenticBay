@@ -393,6 +393,18 @@ class JobSessionState(BaseModel):
     created_at: str = ""
     last_activity_at: str = ""
 
+    # Public marketplace session fields used by the web marketplace flow
+    public_mode: bool = False
+    public_job_started: bool = False
+    public_result: dict[str, Any] = Field(default_factory=dict)
+    marketplace_agent_slug: str | None = None
+    marketplace_agent_name: str | None = None
+    marketplace_action_id: str | None = None
+    marketplace_action_name: str | None = None
+    marketplace_input_summary: str | None = None
+    marketplace_price_usdc: int = 0
+    marketplace_amount_locked_usdc: int = 0
+
 
 # ─────────────────────────────────────────────────
 # HELPER: Parse any inbound user agent message

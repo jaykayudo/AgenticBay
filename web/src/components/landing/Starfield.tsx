@@ -40,7 +40,7 @@ export function Starfield() {
 
     let animationId: number;
     let stars: Star[] = [];
-    let shootingStars: ShootingStar[] = [];
+    const shootingStars: ShootingStar[] = [];
     let lastShootingStarTime = 0;
 
     function resize() {

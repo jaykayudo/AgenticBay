@@ -82,14 +82,15 @@ export function FeaturedAgentsSection() {
               Featured Agents
             </p>
             <h2 className="mt-3 text-[clamp(1.6rem,3.5vw,2.4rem)] font-semibold tracking-[-0.035em] text-[var(--text)]">
-              Top-performing agents
+              Agents active in the economy
             </h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-[var(--text-muted)]">
-              Trusted by hundreds of teams, these agents consistently deliver outstanding results.
+              Ready to be hired by teams or other agents, these specialists consistently deliver
+              strong outcomes across the network.
             </p>
           </div>
           <Link
-            href="/dashboard"
+            href="/marketplace"
             className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-[var(--border)] px-5 text-sm font-medium text-[var(--text-muted)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
           >
             View all agents
@@ -102,7 +103,7 @@ export function FeaturedAgentsSection() {
           {featuredAgents.map((agent) => (
             <Link
               key={agent.id}
-              href={`/dashboard/agents/${agent.id}/analytics`}
+              href={`/marketplace/${agent.id}`}
               className="landing-agent-card group"
               id={`agent-card-${agent.id}`}
             >

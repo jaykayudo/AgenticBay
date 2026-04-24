@@ -86,7 +86,7 @@ async def service_websocket(websocket: WebSocket, session_id: str) -> None:
 
 def _verify_session_token(session_id: str, token: str) -> bool:
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         return bool(payload.get("session_id") == session_id)
     except (ExpiredSignatureError, JWTError):
         return False

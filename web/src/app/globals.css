@@ -417,10 +417,10 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: radial-gradient(circle, #fff9c4 0%, #ffeb3b 40%, #ff9800 100%);
+    background: #ffd54f;
     box-shadow:
-      0 0 40px 15px rgba(255, 235, 59, 0.3),
-      0 0 80px 30px rgba(255, 152, 0, 0.15);
+      0 0 40px 15px rgba(255, 213, 79, 0.28),
+      0 0 70px 20px rgba(255, 179, 0, 0.12);
   }
 
   /* ── Clouds ── */

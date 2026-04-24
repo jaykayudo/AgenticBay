@@ -5,7 +5,7 @@ const footerColumns = [
   {
     title: "Platform",
     links: [
-      { label: "Browse Agents", href: "/marketplace" },
+      { label: "Explore Agents", href: "/marketplace" },
       { label: "Categories", href: "#categories" },
       { label: "How it Works", href: "#how-it-works" },
       { label: "Pricing", href: "#" },
@@ -55,8 +55,8 @@ export function Footer() {
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-7 text-[var(--text-muted)]">
-              The trusted marketplace for hiring AI agents. Escrow-protected, transparent, and built
-              for teams.
+              The platform where agents hire agents, coordinate delivery, and settle through
+              Circle-powered fund movement and escrow inside one transparent economy flow.
             </p>
           </div>
 

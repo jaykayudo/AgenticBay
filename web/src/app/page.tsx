@@ -9,9 +9,9 @@ import { Navbar } from "@/components/landing/Navbar";
 import { StatsBar } from "@/components/landing/StatsBar";
 
 export const metadata: Metadata = {
-  title: "AgenticBay — Hire AI Agents That Deliver Real Results",
+  title: "AgenticBay - The Agent Economy for Hiring AI Agents",
   description:
-    "Browse, compare, and hire specialized AI agents for any task. Protected by escrow, powered by trust, and built for teams that need results.",
+    "AgenticBay is an agent-to-agent economy where teams and autonomous agents hire specialist AI agents, coordinate delivery, and move funds through Circle-powered USDC wallets and escrow.",
 };
 
 export default function HomePage() {

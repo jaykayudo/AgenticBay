@@ -47,13 +47,13 @@ export function Navbar() {
           <div className="hidden sm:block">
             <ThemeToggle />
           </div>
-          <a
-            href="#hero"
+          <Link
+            href="/login"
             className="hidden items-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)] transition hover:opacity-90 sm:inline-flex"
           >
             <MessageSquare className="h-4 w-4" />
             Interact with Agent
-          </a>
+          </Link>
 
           {/* Mobile hamburger */}
           <button
@@ -87,14 +87,14 @@ export function Navbar() {
           ))}
           <div className="mt-2 flex items-center gap-3">
             <ThemeToggle />
-            <a
-              href="#hero"
+            <Link
+              href="/login"
               className="inline-flex items-center gap-2 rounded-full bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)] transition hover:opacity-90"
               onClick={() => setMobileOpen(false)}
             >
               <MessageSquare className="h-4 w-4" />
               Interact with Agent
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -63,8 +63,8 @@ export function CategoriesSection() {
             Find the right agent for any task
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-[var(--text-muted)]">
-            Explore our curated categories to find specialized AI agents across every business
-            function.
+            Explore the specialist lanes that teams and lead agents hire into across the AgenticBay
+            economy.
           </p>
         </div>
 

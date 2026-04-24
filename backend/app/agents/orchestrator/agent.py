@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import uuid
@@ -314,6 +315,9 @@ class OrchestratorAgent:
     async def _handle_service_request(
         self, state: JobSessionState, message: ServiceAgentRequest, send: SendFn
     ) -> None:
+        if state.public_mode:
+            await self._handle_public_service_request(state, message, send)
+            return
 
         if not state.connected_agent_id:
             await send(
@@ -448,6 +452,9 @@ class OrchestratorAgent:
     async def _handle_payment_successful(
         self, state: JobSessionState, message: PaymentSuccessfulRequest, send: SendFn
     ) -> None:
+        if state.public_mode:
+            await self._handle_public_payment_successful(state, message, send)
+            return
 
         invoice_id = message.data.invoice_id
 
@@ -523,6 +530,9 @@ class OrchestratorAgent:
     async def _handle_close(
         self, state: JobSessionState, message: CloseRequest, send: SendFn
     ) -> None:
+        if state.public_mode:
+            await self._handle_public_close(state, send)
+            return
 
         state.phase = SessionPhase.CLOSING
         await self.session_store.save(state)
@@ -554,6 +564,311 @@ class OrchestratorAgent:
     # ──────────────────────────────────────────
     # SEND COMMAND TO SERVICE AGENT (WebSocket)
     # ──────────────────────────────────────────
+    async def _handle_public_service_request(
+        self, state: JobSessionState, message: ServiceAgentRequest, send: SendFn
+    ) -> None:
+        from app.services.marketplace_public import marketplace_public_service
+
+        if state.phase == SessionPhase.CLOSED:
+            await send(
+                ErrorResponse(
+                    type="ERROR",
+                    data=ErrorResponseData(
+                        error_type="state_error",
+                        message="This job session has already been closed.",
+                    ),
+                ).to_text()
+            )
+            return
+
+        if state.public_job_started:
+            await send(
+                ServiceAgentResponse(
+                    type="SERVICE_AGENT",
+                    message="The orchestrator is already processing this marketplace job.",
+                    data={
+                        "status": state.phase.value,
+                        "action": state.marketplace_action_name or message.data.command,
+                    },
+                ).to_text()
+            )
+            return
+
+        state.public_job_started = True
+        state.phase = SessionPhase.ACTIVE
+        state.last_activity_at = datetime.now(UTC).isoformat()
+        await self.session_store.save(state)
+        marketplace_public_service.mark_processing(state.session_id)
+
+        await send(
+            ServiceAgentResponse(
+                type="SERVICE_AGENT",
+                message=(
+                    f"Orchestrator accepted {state.marketplace_action_name or message.data.command} "
+                    "and started preparing the delivery plan."
+                ),
+                data={
+                    "progress": 6,
+                    "stage": "accepted",
+                    "inputSummary": state.marketplace_input_summary,
+                },
+            ).to_text()
+        )
+
+        asyncio.create_task(self._run_public_job_flow(state.session_id))
+
+    async def _handle_public_payment_successful(
+        self, state: JobSessionState, message: PaymentSuccessfulRequest, send: SendFn
+    ) -> None:
+        from app.services.marketplace_public import marketplace_public_service
+
+        invoice_id = message.data.invoice_id
+
+        if not state.pending_invoice_id or invoice_id != state.pending_invoice_id:
+            await send(
+                ErrorResponse(
+                    type="ERROR",
+                    data=ErrorResponseData(
+                        error_type="payment_error",
+                        message="There is no matching pending payment request for this session.",
+                    ),
+                ).to_text()
+            )
+            return
+
+        if invoice_id not in state.paid_invoice_ids:
+            state.paid_invoice_ids.append(invoice_id)
+
+        state.pending_invoice_id = None
+        state.phase = SessionPhase.ACTIVE
+        state.total_paid = float(state.marketplace_price_usdc)
+        state.marketplace_amount_locked_usdc = state.marketplace_price_usdc
+        state.last_activity_at = datetime.now(UTC).isoformat()
+        await self.session_store.save(state)
+        marketplace_public_service.mark_payment_locked(
+            state.session_id, state.marketplace_amount_locked_usdc
+        )
+
+        await send(
+            PaymentSuccessfulResponse(
+                type="PAYMENT_SUCCESSFUL",
+                data=PaymentSuccessfulResponseData(invoice_id=invoice_id),
+            ).to_text()
+        )
+        await send(
+            ServiceAgentResponse(
+                type="SERVICE_AGENT",
+                message="Payment confirmed. The orchestrator locked funds in escrow and resumed the job.",
+                data={
+                    "progress": 42,
+                    "stage": "payment_confirmed",
+                    "amountLockedUsdc": state.marketplace_amount_locked_usdc,
+                },
+            ).to_text()
+        )
+
+        asyncio.create_task(self._complete_public_job_flow(state.session_id))
+
+    async def _handle_public_close(self, state: JobSessionState, send: SendFn) -> None:
+        from app.services.marketplace_public import marketplace_public_service
+
+        is_completed = bool(state.public_result)
+        state.phase = SessionPhase.CLOSED
+        state.last_activity_at = datetime.now(UTC).isoformat()
+        await self.session_store.save(state)
+
+        if is_completed:
+            marketplace_public_service.mark_closed(state.session_id)
+            await send(
+                ServiceAgentResponse(
+                    type="SERVICE_AGENT",
+                    message="Job session closed. Result package remains available for download.",
+                    data={"status": "closed"},
+                ).to_text()
+            )
+        else:
+            marketplace_public_service.mark_cancelled(state.session_id)
+            await send(
+                ServiceAgentResponse(
+                    type="SERVICE_AGENT",
+                    message="Job canceled by user. The orchestrator stopped further processing.",
+                    data={"status": "cancelled"},
+                ).to_text()
+            )
+
+    async def _run_public_job_flow(self, session_id: str) -> None:
+        from app.core.config import settings
+        from app.services.marketplace_public import marketplace_public_service
+
+        state = await self._get_live_public_state(session_id)
+        if state is None:
+            return
+
+        await self._send_public_message(
+            session_id,
+            ServiceAgentResponse(
+                type="SERVICE_AGENT",
+                message="Orchestrator is analyzing the job brief and preparing execution steps.",
+                data={"progress": 18, "stage": "planning"},
+            ).to_text(),
+        )
+
+        await asyncio.sleep(0.8)
+        state = await self._get_live_public_state(session_id)
+        if state is None:
+            return
+
+        await self._send_public_message(
+            session_id,
+            ServiceAgentResponse(
+                type="SERVICE_AGENT",
+                message="Initial plan assembled. The next step is validating scope and escrow requirements.",
+                data={
+                    "progress": 28,
+                    "stage": "scope_validated",
+                    "action": state.marketplace_action_name,
+                },
+            ).to_text(),
+        )
+
+        await asyncio.sleep(0.9)
+        state = await self._get_live_public_state(session_id)
+        if state is None:
+            return
+
+        if state.marketplace_price_usdc > 0:
+            invoice_id = f"invoice-{uuid.uuid4().hex[:10]}"
+            state.pending_invoice_id = invoice_id
+            state.phase = SessionPhase.AWAITING_PAYMENT
+            state.last_activity_at = datetime.now(UTC).isoformat()
+            await self.session_store.save(state)
+            marketplace_public_service.mark_waiting_payment(session_id)
+
+            await self._send_public_message(
+                session_id,
+                PaymentResponse(
+                    type="PAYMENT",
+                    data=PaymentResponseData(
+                        amount=float(state.marketplace_price_usdc),
+                        description=(
+                            f"Escrow deposit for {state.marketplace_action_name or 'marketplace job'}"
+                        ),
+                        contract_data=ContractData(
+                            invoice_id=invoice_id,
+                            invoice_contract=settings.INVOICE_CONTRACT_ADDRESS
+                            or "0xDEMOESCROW0000000000000000000000000000",
+                            function_name="payInvoice",
+                        ),
+                    ),
+                ).to_text(),
+            )
+            return
+
+        await self._complete_public_job_flow(session_id)
+
+    async def _complete_public_job_flow(self, session_id: str) -> None:
+        from app.services.marketplace_public import marketplace_public_service
+
+        progress_updates = [
+            (
+                56,
+                "Orchestrator handed the scoped brief into the execution lane and is collecting outputs.",
+                "execution_started",
+            ),
+            (
+                78,
+                "Outputs are being normalized into the delivery package and confidence checks are running.",
+                "packaging_results",
+            ),
+            (
+                94,
+                "Final result package is ready. Preparing completion payload for the session feed.",
+                "finalizing",
+            ),
+        ]
+
+        for progress, message, stage in progress_updates:
+            state = await self._get_live_public_state(session_id)
+            if state is None:
+                return
+            await self._send_public_message(
+                session_id,
+                ServiceAgentResponse(
+                    type="SERVICE_AGENT",
+                    message=message,
+                    data={"progress": progress, "stage": stage},
+                ).to_text(),
+            )
+            await asyncio.sleep(0.85)
+
+        state = await self._get_live_public_state(session_id)
+        if state is None:
+            return
+
+        result_payload: dict[str, object] = {
+            "action": state.marketplace_action_name or "Marketplace action",
+            "agentName": state.marketplace_agent_name or "Selected agent",
+            "inputSummary": state.marketplace_input_summary or "",
+            "escrowLockedUsdc": state.marketplace_amount_locked_usdc,
+            "deliverables": [
+                {
+                    "label": "Execution summary",
+                    "content": (
+                        f"{state.marketplace_agent_name or 'The agent'} completed "
+                        f"{state.marketplace_action_name or 'the selected action'} and returned a "
+                        "structured package for the next workflow step."
+                    ),
+                },
+                {
+                    "label": "Recommended next step",
+                    "content": "Review the payload, approve downstream execution, or close the session.",
+                },
+            ],
+            "resultText": (
+                f"{state.marketplace_action_name or 'Job'} completed successfully for "
+                f"{state.marketplace_agent_name or 'the selected agent'}."
+            ),
+            "completedAt": datetime.now(UTC).isoformat(),
+        }
+
+        state.phase = SessionPhase.CLOSING
+        state.public_result = result_payload
+        state.last_activity_at = datetime.now(UTC).isoformat()
+        await self.session_store.save(state)
+        marketplace_public_service.mark_completed(session_id, result_payload)
+
+        await self._send_public_message(
+            session_id,
+            ServiceAgentResponse(
+                type="SERVICE_AGENT",
+                message="Result package assembled and ready for review.",
+                data={"progress": 100, "stage": "result_ready"},
+            ).to_text(),
+        )
+        await self._send_public_message(
+            session_id,
+            CloseAppealResponse(
+                type="CLOSE_APPEAL",
+                data={
+                    "message": (
+                        f"{state.marketplace_action_name or 'Job'} completed for "
+                        f"{state.marketplace_agent_name or 'the selected agent'}."
+                    ),
+                    "details": result_payload,
+                },
+            ).to_text(),
+        )
+
+    async def _get_live_public_state(self, session_id: str) -> JobSessionState | None:
+        state = await self.session_store.get(session_id)
+        if state is None or not state.public_mode or state.phase == SessionPhase.CLOSED:
+            return None
+        return state
+
+    async def _send_public_message(self, session_id: str, text: str) -> None:
+        if session_manager.is_user_connected(session_id):
+            await session_manager.send_to_user(session_id, text)
+
     async def _send_to_service(
         self,
         session_id: str,
