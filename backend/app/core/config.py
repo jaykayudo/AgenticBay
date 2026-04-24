@@ -47,8 +47,18 @@ class Settings(BaseSettings):
 
     # JWT
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ACCESS_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # OAuth sign-in
+    GOOGLE_AUTH_URL: str | None = None
+    FACEBOOK_AUTH_URL: str | None = None
+
+    # Email OTP auth
+    EMAIL_OTP_EXPIRE_SECONDS: int = 60 * 10
+    EMAIL_OTP_MAX_ATTEMPTS: int = 5
+    EMAIL_OTP_RATE_LIMIT_WINDOW_SECONDS: int = 60 * 15
+    EMAIL_OTP_RATE_LIMIT_MAX_REQUESTS: int = 3
 
     # Orchestrator
     ORCHESTRATOR_WS_URL: str = "ws://localhost:8000"
@@ -66,6 +76,7 @@ class Settings(BaseSettings):
 
     MARKETPLACE_FEE_PERCENT: float = 5.0
     BLOCKCHAIN: str = "ARC-TESTNET"
+    INVOICE_CONTRACT_ADDRESS: str = ""
 
     # HMAC-SHA256 secret used to verify inbound Circle webhook signatures
     CIRCLE_WEBHOOK_SECRET: str = ""

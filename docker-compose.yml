@@ -1,5 +1,7 @@
 services:
   postgres:
+    profiles:
+      - local-db
     image: postgres:16-alpine
     container_name: agentic_bay_postgres
     restart: unless-stopped
@@ -41,14 +43,10 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/agentic_bay
-      DATABASE_URL_SYNC: postgresql+psycopg2://postgres:postgres@postgres:5432/agentic_bay
       REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     volumes:

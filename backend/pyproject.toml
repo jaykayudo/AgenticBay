@@ -29,6 +29,7 @@ dependencies = [
     "voyageai>=0.3.7",
     "jwt>=1.4.0",
     "aiosqlite>=0.22.1",
+    "numpy>=2.4.4",
 ]
 
 [project.optional-dependencies]
@@ -55,6 +56,7 @@ exclude = ["alembic/versions/*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

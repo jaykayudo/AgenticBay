@@ -5,7 +5,7 @@ import enum
 import json
 from typing import Any, Literal, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ─────────────────────────────────────────────────
@@ -14,8 +14,7 @@ from pydantic import BaseModel, Field
 class BaseMessage(BaseModel):
     """Root for all messages in the system"""
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
     def to_text(self) -> str:
         """

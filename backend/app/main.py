@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.routes import auth_router
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import close_asyncpg_pool
@@ -56,6 +57,7 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+app.include_router(auth_router, prefix="/api")
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 app.include_router(ws_router)
 

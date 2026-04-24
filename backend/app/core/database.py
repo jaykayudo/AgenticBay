@@ -10,10 +10,10 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
-_asyncpg_pool: asyncpg.Pool[asyncpg.Record] | None = None
+_asyncpg_pool: asyncpg.Pool | None = None
 
 
-async def get_asyncpg_pool() -> asyncpg.Pool[asyncpg.Record]:
+async def get_asyncpg_pool() -> asyncpg.Pool:
     global _asyncpg_pool
     if _asyncpg_pool is None:
         dsn = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
@@ -29,7 +29,7 @@ async def close_asyncpg_pool() -> None:
 
 
 @asynccontextmanager
-async def asyncpg_connection() -> AsyncGenerator[asyncpg.Connection[asyncpg.Record], None]:
+async def asyncpg_connection() -> AsyncGenerator[asyncpg.Connection, None]:
     pool = await get_asyncpg_pool()
     async with pool.acquire() as conn:
         yield conn
