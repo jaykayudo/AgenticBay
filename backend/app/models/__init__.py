@@ -19,6 +19,7 @@ from app.models.spending import AgentSpending
 from app.models.users import User, UserRole, UserStatus
 from app.models.wallets import (
     EscrowWallet,
+    EscrowWalletStatus,
     TransactionStatus,
     TransactionType,
     WalletTransaction,
@@ -41,6 +42,7 @@ __all__ = [
     "ApiKeyEnvironment",
     # Wallets
     "EscrowWallet",
+    "EscrowWalletStatus",
     "WalletTransaction",
     "TransactionType",
     "TransactionStatus",

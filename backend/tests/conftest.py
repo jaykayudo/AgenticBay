@@ -134,19 +134,21 @@ async def make_invoice(
     session: AsyncSession,
     job_id: uuid.UUID,
     session_id: uuid.UUID,
-    buyer_id: uuid.UUID,
-    agent_id: uuid.UUID,
+    payer_user_id: uuid.UUID,
+    service_agent_id: uuid.UUID,
     **kwargs,
 ) -> Invoice:
+    amount = kwargs.pop("amount", Decimal("10.000000"))
     defaults: dict = dict(
         job_id=job_id,
         session_id=session_id,
-        buyer_id=buyer_id,
-        agent_id=agent_id,
-        amount=Decimal("10.000000"),
+        payer_user_id=payer_user_id,
+        service_agent_id=service_agent_id,
+        amount=amount,
+        marketplace_fee=Decimal("0.500000"),
+        agent_payout=Decimal("9.500000"),
         currency="USDC",
         status=InvoiceStatus.PENDING,
-        payment_function_name="pay_invoice",
     )
     defaults.update(kwargs)
     return await InvoiceRepository(session).create(**defaults)
