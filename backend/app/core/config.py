@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     APP_ENV: Literal["development", "staging", "production", "testing"] = "development"
     DEBUG: bool = False
     SECRET_KEY: str
+    JWT_SECRET: str
     API_V1_PREFIX: str = "/api/v1"
 
     # Server
@@ -58,6 +59,15 @@ class Settings(BaseSettings):
     EMAIL_OTP_MAX_ATTEMPTS: int = 5
     EMAIL_OTP_RATE_LIMIT_WINDOW_SECONDS: int = 60 * 15
     EMAIL_OTP_RATE_LIMIT_MAX_REQUESTS: int = 3
+
+    # Orchestrator
+    ORCHESTRATOR_WS_URL: str = "ws://localhost:8000"
+
+    # Web3
+    RPC_URL: str = ""
+    INVOICE_CONTRACT_ADDRESS: str = ""
+    INVOICE_CONTRACT_ABI: str = ""
+    ORCHESTRATOR_PRIVATE_KEY: str = ""
 
     @property
     def is_production(self) -> bool:

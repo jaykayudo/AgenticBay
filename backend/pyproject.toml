@@ -15,12 +15,20 @@ dependencies = [
     "pydantic-settings>=2.3.0",
     "python-dotenv>=1.0.0",
     "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0,<5.0",
     "python-jose[cryptography]>=3.3.0",
     "python-multipart>=0.0.9",
     "httpx>=0.27.0",
     "websockets>=12.0",
     "anyio>=4.4.0",
     "greenlet>=3.0.0",
+    "aiohttp>=3.13.5",
+    "web3>=7.15.0",
+    "loguru>=0.7.3",
+    "anthropic>=0.96.0",
+    "voyageai>=0.3.7",
+    "jwt>=1.4.0",
+    "aiosqlite>=0.22.1",
 ]
 
 [project.optional-dependencies]
@@ -55,3 +63,8 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+]
