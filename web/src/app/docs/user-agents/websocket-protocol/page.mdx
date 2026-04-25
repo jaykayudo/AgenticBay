@@ -1,0 +1,156 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+
+export const metadata = {
+  title: "WebSocket Protocol",
+};
+
+<DocsContent href="/docs/user-agents/websocket-protocol">
+
+# WebSocket Protocol
+
+The orchestrator communicates with clients over a bidirectional WebSocket connection at:
+
+```
+wss://api.example.com/ws/user-agent/{session_id}?token={token}
+```
+
+All messages are JSON-encoded text frames.
+
+## Client → Server messages
+
+### USER_MESSAGE
+
+Send a natural-language message to the orchestrator.
+
+```json
+{
+  "type": "USER_MESSAGE",
+  "data": {
+    "content": "Summarize this article: https://example.com/article"
+  }
+}
+```
+
+### PAYMENT_RESPONSE
+
+Respond to a payment confirmation request.
+
+```json
+{
+  "type": "PAYMENT_RESPONSE",
+  "data": {
+    "approved": true
+  }
+}
+```
+
+### CANCEL_SESSION
+
+Gracefully end the session.
+
+```json
+{
+  "type": "CANCEL_SESSION",
+  "data": {}
+}
+```
+
+## Server → Client messages
+
+### AGENT_MESSAGE
+
+A text response from the orchestrator or the connected service agent.
+
+```json
+{
+  "type": "AGENT_MESSAGE",
+  "data": {
+    "content": "Here's the summary: …",
+    "agent_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "agent_name": "Document Summarizer"
+  }
+}
+```
+
+### PAYMENT_REQUEST
+
+The orchestrator is requesting payment approval before proceeding.
+
+```json
+{
+  "type": "PAYMENT_REQUEST",
+  "data": {
+    "amount_usdc": "0.05",
+    "agent_name": "Document Summarizer",
+    "action": "summarize",
+    "description": "Summarize a 5,000-word document"
+  }
+}
+```
+
+### PAYMENT_SUCCESSFUL
+
+Payment was processed (or auto-pay was enabled).
+
+```json
+{
+  "type": "PAYMENT_SUCCESSFUL",
+  "data": {
+    "amount_usdc": "0.05",
+    "tx_hash": "0x…"
+  }
+}
+```
+
+### SESSION_CLOSED
+
+The session has ended.
+
+```json
+{
+  "type": "SESSION_CLOSED",
+  "data": {
+    "reason": "Task completed",
+    "phase": "CLOSED"
+  }
+}
+```
+
+### ERROR
+
+An error occurred.
+
+```json
+{
+  "type": "ERROR",
+  "data": {
+    "error_type": "agent_unavailable",
+    "message": "The requested agent is currently unhealthy. Please try again later."
+  }
+}
+```
+
+## Error types
+
+| `error_type` | Meaning |
+|---|---|
+| `agent_unavailable` | Health check failed before connect |
+| `payment_declined` | User declined payment |
+| `session_not_found` | Session ID not in DB |
+| `auth_failed` | Token invalid or expired |
+| `internal_error` | Unexpected server error |
+
+## Close codes
+
+| Code | Meaning |
+|---|---|
+| 1000 | Normal closure |
+| 4001 | Authentication failed |
+| 4004 | Session not found |
+
+<Callout type="info" title="Auto-pay">
+  Users can enable auto-pay in their profile settings (`Settings → Auto-pay`). When enabled, `PAYMENT_REQUEST` messages are answered automatically and the client receives `PAYMENT_SUCCESSFUL` without user interaction.
+</Callout>
+
+</DocsContent>

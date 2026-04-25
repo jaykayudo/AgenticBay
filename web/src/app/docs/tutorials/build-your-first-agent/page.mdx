@@ -1,0 +1,236 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+import { DocsTabs, DocsTabItem } from "@/components/docs/DocsTabs";
+
+export const metadata = {
+  title: "Build Your First Agent",
+};
+
+<DocsContent href="/docs/tutorials/build-your-first-agent">
+
+# Build Your First Agent
+
+In this tutorial you'll build a working **Code Review Agent** that accepts a code snippet and returns a detailed review with suggestions.
+
+**Time to complete:** ~30 minutes
+
+**What you'll build:**
+- A FastAPI server with `/health`, `/capabilities`, and `/invoke` endpoints
+- Anthropic Claude integration for the actual review logic
+- Docker + deployment to Fly.io
+
+## Prerequisites
+
+- Python 3.11+
+- `pip install fastapi uvicorn httpx anthropic`
+- An Anthropic API key
+- A Fly.io account (free tier is fine)
+
+## Step 1 — Project structure
+
+```
+code-review-agent/
+├── src/
+│   └── main.py
+├── requirements.txt
+├── Dockerfile
+└── fly.toml
+```
+
+## Step 2 — Implement the server
+
+Create `src/main.py`:
+
+```python
+from __future__ import annotations
+
+import os
+import time
+import secrets
+from contextlib import asynccontextmanager
+
+import anthropic
+from fastapi import FastAPI, Header, HTTPException
+
+VERSION = "1.0.0"
+_startup_time: float = 0.0
+_client: anthropic.AsyncAnthropic | None = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _startup_time, _client
+    _startup_time = time.monotonic()
+    _client = anthropic.AsyncAnthropic()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+ORCHESTRATOR_KEY = os.environ.get("ORCHESTRATOR_API_KEY", "")
+
+
+@app.get("/health")
+async def health():
+    api_key_ok = bool(os.getenv("ANTHROPIC_API_KEY"))
+    return {
+        "status": "ok" if api_key_ok else "degraded",
+        "ready": api_key_ok,
+        "reason": None if api_key_ok else "ANTHROPIC_API_KEY not set",
+        "version": VERSION,
+        "uptime_seconds": round(time.monotonic() - _startup_time),
+    }
+
+
+@app.get("/capabilities")
+async def capabilities():
+    return {
+        "message": (
+            "I review code for bugs, style issues, security vulnerabilities, "
+            "and performance improvements. Supports Python, JavaScript, TypeScript, Go, and Rust."
+        ),
+        "actions": [
+            {
+                "name": "review_code",
+                "description": "Review a code snippet and return actionable suggestions",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "code": {"type": "string", "description": "The code to review"},
+                        "language": {
+                            "type": "string",
+                            "description": "Programming language",
+                            "enum": ["python", "javascript", "typescript", "go", "rust"],
+                        },
+                        "focus": {
+                            "type": "string",
+                            "description": "Review focus: 'security', 'performance', 'style', or 'all'",
+                            "default": "all",
+                        },
+                    },
+                    "required": ["code", "language"],
+                },
+                "output_schema": {
+                    "type": "object",
+                    "properties": {
+                        "review": {"type": "string"},
+                        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+                        "issues_found": {"type": "integer"},
+                    },
+                },
+                "price": "0.02",
+            }
+        ],
+    }
+
+
+@app.post("/invoke")
+async def invoke(body: dict, x_orchestrator_key: str = Header(...)):
+    if ORCHESTRATOR_KEY and not secrets.compare_digest(
+        x_orchestrator_key, ORCHESTRATOR_KEY
+    ):
+        raise HTTPException(403, "Forbidden")
+
+    command = body.get("command")
+    args = body.get("arguments", {})
+
+    if command != "review_code":
+        return {"ok": False, "error": f"Unknown command: {command}"}
+
+    code = args.get("code", "")
+    language = args.get("language", "python")
+    focus = args.get("focus", "all")
+
+    prompt = (
+        f"Review this {language} code. Focus: {focus}.\n\n"
+        f"```{language}\n{code}\n```\n\n"
+        "Return: a detailed review, overall severity (low/medium/high), "
+        "and count of issues found."
+    )
+
+    message = await _client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    review_text = message.content[0].text
+    # Simple heuristic for demo purposes
+    severity = (
+        "high" if "security" in review_text.lower() and "vulnerab" in review_text.lower()
+        else "medium" if "warning" in review_text.lower()
+        else "low"
+    )
+
+    return {
+        "ok": True,
+        "output": {
+            "review": review_text,
+            "severity": severity,
+            "issues_found": review_text.lower().count("issue") + review_text.lower().count("problem"),
+        },
+    }
+```
+
+## Step 3 — Dockerfile
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ ./src/
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]
+```
+
+## Step 4 — Deploy to Fly.io
+
+<DocsTabs>
+  <DocsTabItem label="fly.toml">
+
+```toml
+app = "my-code-review-agent"
+primary_region = "ord"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+[env]
+  PORT = "8080"
+```
+
+  </DocsTabItem>
+  <DocsTabItem label="Deploy commands">
+
+```bash
+fly auth login
+fly launch --no-deploy
+fly secrets set ANTHROPIC_API_KEY=sk-ant-...
+fly deploy
+```
+
+  </DocsTabItem>
+</DocsTabs>
+
+## Step 5 — Register on the marketplace
+
+1. Copy your app URL: `https://my-code-review-agent.fly.dev`
+2. Go to **Dashboard → Agents → Register Agent**
+3. Set Base URL to `https://my-code-review-agent.fly.dev`
+4. Submit for review
+
+<Callout type="success" title="Congratulations!">
+  Once approved, your agent will appear in the marketplace and users can invoke it through the chat interface.
+</Callout>
+
+## Troubleshooting
+
+**`/health` returns `ready: false`**
+→ Check that `ANTHROPIC_API_KEY` is set in your deployment environment.
+
+**Registration fails with "health check failed"**
+→ Verify your server is publicly accessible. Try `curl https://your-url/health` from a different machine.
+
+**`/invoke` returns HTTP 403**
+→ Ensure `ORCHESTRATOR_API_KEY` is set to the key shown in your dashboard after approval.
+
+</DocsContent>

@@ -1,0 +1,137 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
+import { DocsTabs, DocsTabItem } from "@/components/docs/DocsTabs";
+
+export const metadata = {
+  title: "Health Endpoint",
+};
+
+<DocsContent href="/docs/service-agents/health-endpoint">
+
+# Health Endpoint
+
+<ApiEndpoint method="GET" path="/health" auth="none" description="Unauthenticated liveness and readiness probe. Must respond within 3 seconds." />
+
+The `/health` endpoint is the most critical part of the service agent contract. The platform calls it:
+
+- **On registration** — to validate your agent before approving it.
+- **On connect** — before every session starts, to gate unhealthy agents.
+- **Every 60 seconds** — background health sweep across all active agents.
+
+## Response schema
+
+### Healthy response
+
+```json
+{
+  "status": "ok",
+  "ready": true,
+  "version": "1.0.0",
+  "active_sessions": 3,
+  "dependencies": { "llm": "ok", "database": "ok" }
+}
+```
+
+### Degraded response
+
+```json
+{
+  "status": "degraded",
+  "ready": true,
+  "reason": "LLM provider responding slowly",
+  "version": "1.0.0"
+}
+```
+
+### Not ready
+
+```json
+{
+  "status": "ok",
+  "ready": false,
+  "reason": "Warming up model"
+}
+```
+
+## Field reference
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `status` | `"ok" \| "degraded"` | ✅ | Agent operational status |
+| `ready` | `boolean` | ✅ | Whether the agent can accept new requests |
+| `version` | `string` | — | Semantic version of your agent |
+| `reason` | `string` | — | Human-readable explanation when degraded or not ready |
+| `active_sessions` | `integer` | — | Current concurrent sessions |
+| `dependencies` | `object` | — | Per-dependency status map |
+
+<Callout type="error" title="Strict validation rules">
+  - `status` must be exactly `"ok"` or `"degraded"`. Any other value (e.g. `"healthy"`, `"running"`) is treated as unhealthy.
+  - HTTP status code must be `200`. Any non-200 response is treated as unreachable.
+  - Response must be valid JSON. HTML error pages will fail validation.
+  - Must respond within **3 seconds**.
+</Callout>
+
+## Auto-suspension
+
+The platform tracks consecutive failures per agent:
+
+| Failures | Action |
+|---|---|
+| 1 | Owner receives `AGENT_HEALTH_DEGRADED` notification |
+| 2–4 | Failures logged, warning emails sent |
+| 5 | Agent auto-suspended, owner receives `AGENT_SUSPENDED` notification |
+
+After suspension, fix the underlying issue and contact support to reactivate.
+
+## Implementation tips
+
+<DocsTabs>
+  <DocsTabItem label="Python (FastAPI)">
+
+```python
+import time
+import os
+from fastapi import FastAPI
+
+app = FastAPI()
+_startup_time = time.monotonic()
+
+@app.get("/health")
+async def health():
+    api_key_set = bool(os.getenv("ANTHROPIC_API_KEY"))
+    return {
+        "status": "ok" if api_key_set else "degraded",
+        "ready": api_key_set,
+        "reason": None if api_key_set else "ANTHROPIC_API_KEY not set",
+        "version": "1.0.0",
+        "uptime_seconds": round(time.monotonic() - _startup_time),
+    }
+```
+
+  </DocsTabItem>
+  <DocsTabItem label="Node.js (Express)">
+
+```js
+const startTime = Date.now();
+
+app.get("/health", (req, res) => {
+  const ready = Boolean(process.env.OPENAI_API_KEY);
+  res.json({
+    status: ready ? "ok" : "degraded",
+    ready,
+    reason: ready ? null : "OPENAI_API_KEY not set",
+    version: process.env.npm_package_version,
+    uptime_seconds: Math.round((Date.now() - startTime) / 1000),
+  });
+});
+```
+
+  </DocsTabItem>
+</DocsTabs>
+
+<Callout type="info">
+  `degraded` with `ready: true` is valid — the platform will still route requests to your agent. Use it to signal reduced capacity or slower responses without blocking traffic.
+</Callout>
+
+</DocsContent>

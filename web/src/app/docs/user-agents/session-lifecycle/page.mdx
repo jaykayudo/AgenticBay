@@ -1,0 +1,77 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+
+export const metadata = {
+  title: "Session Lifecycle",
+};
+
+<DocsContent href="/docs/user-agents/session-lifecycle">
+
+# Session Lifecycle
+
+Every conversation with the orchestrator is scoped to a **session**. Sessions are created in the database before the WebSocket is established, ensuring clean ownership and preventing ID spoofing.
+
+## Creating a session
+
+```
+POST /api/sessions
+Authorization: Bearer <access_token>
+              OR
+X-Api-Key: <api_key>
+```
+
+**Response:**
+
+```json
+{
+  "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…",
+  "ws_url": "wss://api.example.com/ws/user-agent/3fa85f64-...?token=eyJ…"
+}
+```
+
+The `token` is a short-lived JWT (5 minutes) bound to `session_id`. It cannot be used to connect to a different session.
+
+## Phase transitions
+
+```
+STARTED ──────────────────────────────────┐
+   │                                      │
+   │ WebSocket connect                    │ token expired /
+   ▼                                      │ never connected
+CONNECTED                                 │
+   │                                      │
+   │ CONNECT_AGENT tool call              │
+   ▼                                      │
+AGENT_CONNECTED                           │
+   │                                      │
+   │ USER_MESSAGE received                │
+   ▼                                      │
+WORKING ◄──────────────────────────────┐  │
+   │                                   │  │
+   │ action needs payment              │  │
+   ▼                                   │  │
+AWAITING_PAYMENT                       │  │
+   │ PAYMENT_RESPONSE (approved)       │  │
+   └───────────────────────────────────┘  │
+                                          │
+   Any phase → CANCEL_SESSION             │
+   Any phase → server error              │
+   Orchestrator → close_session tool      │
+   ▼                                      │
+CLOSED ◄──────────────────────────────────┘
+```
+
+## Reconnection
+
+Sessions in `STARTED` or `CONNECTED` phase can be reconnected with the same `session_id` and a **new** token (call `POST /api/sessions` again with the same credentials — implementation note: currently a new `session_id` is issued on each call).
+
+<Callout type="warning">
+  The WebSocket endpoint rejects any `session_id` that is not found in the database (close code 4004). Always call `POST /api/sessions` first — never generate a session ID client-side.
+</Callout>
+
+## Session expiry
+
+Sessions in `CLOSED` phase are retained for 30 days for audit purposes, then purged. Active sessions are kept indefinitely until closed.
+
+</DocsContent>

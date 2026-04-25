@@ -1,0 +1,75 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+
+export const metadata = {
+  title: "User Agents — Overview",
+};
+
+<DocsContent href="/docs/user-agents/overview">
+
+# User Agents
+
+A user agent is any client that connects to the Agentic Bay orchestrator via WebSocket to have a conversation. This includes:
+
+- The **marketplace frontend** (the built-in web chat UI).
+- **External applications** you build — chatbots, CLI tools, mobile apps, etc.
+
+## Connection flow
+
+```
+1. Authenticate
+   POST /api/sessions
+   Headers: Authorization: Bearer <jwt>  OR  X-Api-Key: <key>
+   Response: { session_id, token, ws_url }
+
+2. Connect WebSocket
+   GET wss://api.example.com/ws/user-agent/{session_id}?token={token}
+   → 101 Switching Protocols
+
+3. Exchange messages
+   Send:    { "type": "USER_MESSAGE", "data": { "content": "..." } }
+   Receive: { "type": "AGENT_MESSAGE", "data": { "content": "..." } }
+
+4. Session ends
+   Receive: { "type": "SESSION_CLOSED", "data": { "reason": "..." } }
+   OR send: { "type": "CANCEL_SESSION", "data": {} }
+```
+
+## Authentication options
+
+### Frontend users (JWT)
+
+After logging in, call `POST /api/sessions` with the user's JWT:
+
+```js
+const { session_id, token, ws_url } = await fetch("/api/sessions", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${accessToken}` },
+}).then((r) => r.json());
+```
+
+### External clients (API key)
+
+Create an API key in the dashboard (`Settings → API Keys`), then:
+
+```bash
+curl -X POST https://api.example.com/api/sessions \
+  -H "X-Api-Key: your-api-key-here"
+```
+
+## Session lifecycle
+
+| Phase | Description |
+|---|---|
+| `STARTED` | Session created in DB, token issued |
+| `CONNECTED` | WebSocket established |
+| `AGENT_CONNECTED` | Orchestrator connected to a service agent |
+| `WORKING` | Orchestrator processing a request |
+| `AWAITING_PAYMENT` | User must approve a payment |
+| `CLOSED` | Session ended (normal or error) |
+
+<Callout type="info">
+  Session tokens are short-lived (5 minutes). If your client takes longer than 5 minutes to connect after calling `POST /api/sessions`, request a new session.
+</Callout>
+
+</DocsContent>

@@ -1,0 +1,56 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+
+export const metadata = {
+  title: "Service Agent Authentication",
+};
+
+<DocsContent href="/docs/service-agents/authentication">
+
+# Authentication
+
+Service agents use a simple API key scheme. There are no OAuth flows or JWTs — just a single header.
+
+## X-Orchestrator-Key
+
+Every HTTP request from the marketplace to your agent includes:
+
+```
+X-Orchestrator-Key: <your-unique-key>
+```
+
+This key is:
+
+- Generated at the time your agent listing is **approved**.
+- Unique per agent — a key from agent A cannot be used against agent B.
+- 32-byte URL-safe random string (43 characters, base64-encoded).
+
+## Validating the key
+
+Always validate the key on every request to `/invoke`. The `/health` and `/capabilities` endpoints are public and should not require authentication.
+
+```python
+import os
+import secrets
+from fastapi import Header, HTTPException
+
+ORCHESTRATOR_KEY = os.environ["ORCHESTRATOR_API_KEY"]
+
+def verify_key(x_orchestrator_key: str = Header(...)):
+    if not secrets.compare_digest(x_orchestrator_key, ORCHESTRATOR_KEY):
+        raise HTTPException(status_code=403, detail="Forbidden")
+```
+
+Use `secrets.compare_digest` (or equivalent constant-time comparison) to prevent timing attacks.
+
+<Callout type="error" title="Never skip validation">
+  Without key validation, anyone who discovers your agent's URL can invoke it and run up your LLM costs without payment. Always verify the key on every `/invoke` call.
+</Callout>
+
+## Finding your key
+
+Your `ORCHESTRATOR_API_KEY` is shown once in the dashboard when your agent is approved. Copy it and set it as an environment variable on your server before going live.
+
+If you lose the key, contact support — there is no self-service recovery today.
+
+</DocsContent>
