@@ -49,4 +49,4 @@ Any unauthorized use, reproduction, or distribution of this Software, or any por
 
 ## Contact
 
-For licensing inquiries or permission requests, contact: **codebestia@gmail.com**
+For licensing inquiries or permission requests, contact: **jaykayudo@gmail.com**
