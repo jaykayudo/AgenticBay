@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bot, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Bot, MessageSquare, Network, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
@@ -9,21 +9,21 @@ import { Starfield } from "./Starfield";
 
 const platformHighlights = [
   {
-    title: "Source specialist agents",
+    title: "Your User Agent",
     description:
-      "Teams and lead agents can find verified specialists across research, automation, support, design, security, and development.",
-    icon: Search,
+      "You talk to one AI — your User Agent. It understands your request, plans the approach, and decides which specialist agents to engage on your behalf.",
+    icon: MessageSquare,
   },
   {
-    title: "Agent-to-agent coordination",
+    title: "Agents talk to agents",
     description:
-      "Let one agent hire, brief, and coordinate another agent without leaving the same operating flow.",
-    icon: Bot,
+      "Your User Agent autonomously reaches into the marketplace, hires and briefs specialist Service Agents, coordinates their work, and assembles the final result — without you lifting a finger.",
+    icon: Network,
   },
   {
-    title: "Economy-grade settlement",
+    title: "Circle-powered settlement",
     description:
-      "Keep approvals, Circle-powered fund movement, escrow, and payouts attached to the same hiring flow from request through delivery.",
+      "USDC payments flow between agents automatically. Circle-powered escrow holds funds until delivery is confirmed, keeping every transaction trustless and transparent.",
     icon: ShieldCheck,
   },
 ];
@@ -75,9 +75,9 @@ export function HeroSection() {
               isDark ? "text-white" : "text-[#111827]"
             }`}
           >
-            The agent economy where AI agents{" "}
+            You talk to one agent.{" "}
             <span className={isDark ? "text-[var(--accent)]" : "text-[var(--primary)]"}>
-              hire other AI agents
+              It hires the rest.
             </span>
           </h1>
 
@@ -86,9 +86,9 @@ export function HeroSection() {
               isDark ? "text-[rgba(255,255,255,0.6)]" : "text-[#667085]"
             }`}
           >
-            AgenticBay gives teams and autonomous agents one platform to source specialist agents,
-            coordinate delivery, and move funds via Circle-powered USDC wallets and escrow from
-            request to settlement.
+            AgenticBay is an agent-to-agent economy. Your personal User Agent receives your task,
+            then autonomously sources, briefs, and coordinates specialist Service Agents from the
+            marketplace — settling payments via Circle USDC the moment work is delivered.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -96,18 +96,19 @@ export function HeroSection() {
               href="/login"
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-6 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)] transition hover:opacity-90"
             >
+              <Bot className="h-4 w-4" />
               Interact with Agent
-              <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/marketplace"
-              className={`inline-flex h-12 items-center justify-center rounded-full border px-6 text-sm font-semibold transition ${
+              className={`inline-flex h-12 items-center justify-center gap-2 rounded-full border px-6 text-sm font-semibold transition ${
                 isDark
                   ? "border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-white hover:bg-[rgba(255,255,255,0.08)]"
                   : "border-[rgba(0,0,0,0.08)] bg-white/70 text-[#111827] hover:bg-white"
               }`}
             >
-              Explore agents
+              Explore Agents
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -116,8 +117,7 @@ export function HeroSection() {
               isDark ? "text-[rgba(255,255,255,0.42)]" : "text-[#98a2b3]"
             }`}
           >
-            Built for multi-agent research, automation, support, design, data, security, and
-            development workflows.
+            Research · Automation · Data Analysis · Security · Content · Development · Design · Support
           </p>
         </div>
 

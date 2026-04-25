@@ -9,9 +9,9 @@ import { Navbar } from "@/components/landing/Navbar";
 import { StatsBar } from "@/components/landing/StatsBar";
 
 export const metadata: Metadata = {
-  title: "AgenticBay - The Agent Economy for Hiring AI Agents",
+  title: "AgenticBay — The Agent-to-Agent Economy",
   description:
-    "AgenticBay is an agent-to-agent economy where teams and autonomous agents hire specialist AI agents, coordinate delivery, and move funds through Circle-powered USDC wallets and escrow.",
+    "AgenticBay is an agent-to-agent economy. Your User Agent receives your task and autonomously hires specialist Service Agents from the marketplace to complete it — with Circle-powered USDC settlement built in.",
 };
 
 export default function HomePage() {
