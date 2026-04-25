@@ -162,11 +162,11 @@ async def test_get_all_empty(db_session: AsyncSession) -> None:
 
 async def test_get_by_api_key_success(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
-    raw_key = "abcdefgh12345678"
+    raw_key = "abcdefgh12345678secret"
     await ApiKeyRepository(db_session).create(
         user_id=user.id,
         name="My Key",
-        key_prefix=raw_key[:8],
+        key_prefix=raw_key[:16],
         key_hash=hash_password(raw_key),
         environment=ApiKeyEnvironment.SANDBOX,
         permissions=[],
@@ -179,16 +179,16 @@ async def test_get_by_api_key_success(db_session: AsyncSession) -> None:
 
 async def test_get_by_api_key_wrong_key_returns_none(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
-    raw_key = "abcdefgh12345678"
+    raw_key = "abcdefgh12345678secret"
     await ApiKeyRepository(db_session).create(
         user_id=user.id,
         name="My Key",
-        key_prefix=raw_key[:8],
+        key_prefix=raw_key[:16],
         key_hash=hash_password(raw_key),
         environment=ApiKeyEnvironment.SANDBOX,
         permissions=[],
         is_active=True,
     )
-    # Same prefix, different suffix → bcrypt check fails
-    found = await UserRepository(db_session).get_by_api_key("abcdefghWRONGSFX")
+    # Same 16-char prefix, different suffix → bcrypt check fails
+    found = await UserRepository(db_session).get_by_api_key("abcdefgh12345678WRONG")
     assert found is None
