@@ -15,6 +15,7 @@ from app.api.routes import (
     auth_router,
     marketplace_router,
     notifications_router,
+    sessions_router,
     wallet_router,
     webhooks_router,
 )
@@ -23,6 +24,7 @@ from app.core.config import settings
 from app.core.database import close_asyncpg_pool
 from app.core.redis import close_redis
 from app.websocket.orchestrator import router as ws_router
+from app.websocket.user_agent_chat import router as user_agent_ws_router
 
 
 @asynccontextmanager
@@ -72,8 +74,10 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(notifications_router, prefix="/api")
 app.include_router(wallet_router, prefix="/api")
 app.include_router(webhooks_router, prefix="/api")
+app.include_router(sessions_router, prefix="/api")
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 app.include_router(ws_router)
+app.include_router(user_agent_ws_router)
 
 
 @app.get("/", include_in_schema=False)
