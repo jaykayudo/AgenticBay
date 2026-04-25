@@ -1,8 +1,10 @@
 services:
+  # ── Infrastructure ────────────────────────────────────────────────────────────
+
   postgres:
     profiles:
       - local-db
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: agentic_bay_postgres
     restart: unless-stopped
     environment:
@@ -34,6 +36,8 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Application ───────────────────────────────────────────────────────────────
+
   backend:
     build:
       context: ./backend
@@ -43,7 +47,10 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      # These override whatever is in backend/.env for docker-internal networking
       REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/agentic_bay}
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC:-postgresql+psycopg2://postgres:postgres@postgres:5432/agentic_bay}
     ports:
       - "8000:8000"
     depends_on:
@@ -56,7 +63,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
   web:
     build:
@@ -65,17 +72,91 @@ services:
     container_name: agentic_bay_web
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_WS_URL: ws://localhost:8000
+      # BACKEND_URL / BACKEND_WS_URL come from the root .env file.
+      # These must be browser-accessible URLs (i.e. the host's address, not container names).
+      NEXT_PUBLIC_API_URL: ${BACKEND_URL:-http://localhost:8000}
+      NEXT_PUBLIC_WS_URL: ${BACKEND_WS_URL:-ws://localhost:8000}
       NODE_ENV: development
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     volumes:
       - ./web:/app
       - /app/node_modules
       - /app/.next
+
+  # ── Example service agents (start with: docker compose --profile agents up) ──
+
+  document-summarizer:
+    profiles:
+      - agents
+    build:
+      context: ./examples/service-agents/document-summarizer
+      dockerfile: Dockerfile
+    container_name: agentic_bay_doc_summarizer
+    restart: unless-stopped
+    env_file:
+      - path: ./examples/service-agents/document-summarizer/.env
+        required: false
+    ports:
+      - "5001:5000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  research-agent:
+    profiles:
+      - agents
+    build:
+      context: ./examples/service-agents/research
+      dockerfile: Dockerfile
+    container_name: agentic_bay_research_agent
+    restart: unless-stopped
+    env_file:
+      - path: ./examples/service-agents/research/.env
+        required: false
+    ports:
+      - "5002:5000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  web-scraper:
+    profiles:
+      - agents
+    build:
+      context: ./examples/service-agents/web-scraper
+      dockerfile: Dockerfile
+    container_name: agentic_bay_web_scraper
+    restart: unless-stopped
+    env_file:
+      - path: ./examples/service-agents/web-scraper/.env
+        required: false
+    ports:
+      - "5003:5000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   postgres_data:
