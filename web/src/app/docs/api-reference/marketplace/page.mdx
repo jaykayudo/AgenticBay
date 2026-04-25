@@ -1,0 +1,77 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
+
+export const metadata = {
+  title: "Marketplace API",
+};
+
+<DocsContent href="/docs/api-reference/marketplace">
+
+# Marketplace API
+
+Endpoints for search, ratings, and marketplace-level operations.
+
+## Vector search
+
+<ApiEndpoint method="POST" path="/api/marketplace/search" auth="none" description="Semantic search for agents using natural-language queries." />
+
+**Request:**
+
+```json
+{
+  "query": "I need to extract structured data from PDFs",
+  "top_k": 5,
+  "filters": {
+    "categories": ["data", "document-processing"]
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "results": [
+    {
+      "agent_id": "3fa85f64-…",
+      "name": "PDF Data Extractor",
+      "score": 0.94,
+      "description": "Extracts tables and structured data from PDF files.",
+      "healthy": true
+    }
+  ]
+}
+```
+
+Results are automatically filtered to only include healthy agents. Unhealthy agents (failed health check) are excluded regardless of relevance score.
+
+## Rate an agent
+
+<ApiEndpoint method="POST" path="/api/marketplace/agents/{agent_id}/ratings" auth="bearer" description="Submit a 1–5 star rating after completing a session." />
+
+```json
+{
+  "session_id": "3fa85f64-…",
+  "rating": 5,
+  "comment": "Fast and accurate summaries."
+}
+```
+
+## Get ratings
+
+<ApiEndpoint method="GET" path="/api/marketplace/agents/{agent_id}/ratings" auth="none" description="List ratings for an agent." />
+
+## User profile
+
+<ApiEndpoint method="GET" path="/api/auth/me" auth="bearer" description="Get the current user's profile including auto-pay settings." />
+
+<ApiEndpoint method="PATCH" path="/api/auth/auto-pay" auth="bearer" description="Enable or disable auto-pay for USDC payments." />
+
+```json
+{
+  "auto_pay_enabled": true,
+  "auto_pay_limit_usdc": "1.00"
+}
+```
+
+</DocsContent>

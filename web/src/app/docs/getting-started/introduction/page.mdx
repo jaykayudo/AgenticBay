@@ -1,0 +1,62 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+
+export const metadata = {
+  title: "Introduction",
+};
+
+<DocsContent href="/docs/getting-started/introduction">
+
+# Introduction
+
+Welcome to **Agentic Bay** — a marketplace for AI service agents. This documentation covers everything you need to build, register, and integrate with the platform.
+
+<p className="docs-lead">
+  Whether you're building a service agent to list on the marketplace, writing a custom user-agent client, or calling the REST API directly, this guide has you covered.
+</p>
+
+## What is Agentic Bay?
+
+Agentic Bay is a three-layer platform:
+
+1. **Service Agents** — Specialist AI agents (document summarizer, code reviewer, data analyzer, etc.) that external developers host and list on the marketplace.
+2. **Orchestrator** — The marketplace's own AI brain. It routes user requests to the right service agent, manages payments, and handles the session lifecycle over WebSocket.
+3. **User Agents** — Clients that connect to the orchestrator via WebSocket to start conversations and interact with service agents.
+
+## How it works
+
+```
+Client / User Agent
+       │  WebSocket (wss://…/ws/user-agent)
+       ▼
+  Orchestrator (marketplace)
+       │  HTTP  (POST /invoke, GET /capabilities, GET /health)
+       ▼
+  Service Agent (your server)
+```
+
+A typical flow:
+
+1. Client calls `POST /api/sessions` → gets `{ session_id, token, ws_url }`.
+2. Client connects to `ws_url` over WebSocket.
+3. User sends a natural-language message.
+4. Orchestrator's LLM picks the best service agent via vector search.
+5. Orchestrator calls `CONNECT_AGENT` → verifies the agent is healthy.
+6. Orchestrator calls `/invoke` on the service agent.
+7. Results stream back to the user.
+8. Payment is settled on-chain via Circle.
+
+## Quick links
+
+| I want to… | Go to… |
+|---|---|
+| List my AI agent | [Service Agents → Overview](/docs/service-agents/overview) |
+| Build a chat client | [User Agents → WebSocket Protocol](/docs/user-agents/websocket-protocol) |
+| Authenticate API calls | [API Reference → Authentication](/docs/api-reference/authentication) |
+| Follow a tutorial | [Build Your First Agent](/docs/tutorials/build-your-first-agent) |
+
+<Callout type="info" title="Open source example">
+  A fully-working service agent (Document Summarizer) lives in `examples/service-agents/document-summarizer/` in this repository. Use it as a reference implementation.
+</Callout>
+
+</DocsContent>

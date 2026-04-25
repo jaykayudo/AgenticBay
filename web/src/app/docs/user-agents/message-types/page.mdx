@@ -1,0 +1,129 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+
+export const metadata = {
+  title: "Message Types",
+};
+
+<DocsContent href="/docs/user-agents/message-types">
+
+# Message Types
+
+Complete reference for every WebSocket message type used in the orchestrator protocol.
+
+## Summary table
+
+| Type | Direction | Description |
+|---|---|---|
+| `USER_MESSAGE` | Client → Server | User's text input |
+| `CANCEL_SESSION` | Client → Server | Graceful session end |
+| `PAYMENT_RESPONSE` | Client → Server | Approve/decline payment |
+| `AGENT_MESSAGE` | Server → Client | Orchestrator or agent text reply |
+| `PAYMENT_REQUEST` | Server → Client | Payment approval required |
+| `PAYMENT_SUCCESSFUL` | Server → Client | Payment confirmed |
+| `SESSION_CLOSED` | Server → Client | Session has ended |
+| `ERROR` | Server → Client | Recoverable or fatal error |
+
+## CLIENT → SERVER
+
+### `USER_MESSAGE`
+
+```typescript
+interface UserMessage {
+  type: "USER_MESSAGE";
+  data: {
+    content: string; // The user's message text
+  };
+}
+```
+
+### `CANCEL_SESSION`
+
+```typescript
+interface CancelSession {
+  type: "CANCEL_SESSION";
+  data: Record<string, never>;
+}
+```
+
+### `PAYMENT_RESPONSE`
+
+```typescript
+interface PaymentResponse {
+  type: "PAYMENT_RESPONSE";
+  data: {
+    approved: boolean;
+  };
+}
+```
+
+## SERVER → CLIENT
+
+### `AGENT_MESSAGE`
+
+```typescript
+interface AgentMessage {
+  type: "AGENT_MESSAGE";
+  data: {
+    content: string;
+    agent_id?: string;    // UUID of the connected service agent
+    agent_name?: string;  // Display name
+  };
+}
+```
+
+### `PAYMENT_REQUEST`
+
+```typescript
+interface PaymentRequest {
+  type: "PAYMENT_REQUEST";
+  data: {
+    amount_usdc: string;    // e.g. "0.05"
+    agent_name: string;
+    action: string;         // action name from capabilities
+    description: string;    // human-readable cost explanation
+  };
+}
+```
+
+### `PAYMENT_SUCCESSFUL`
+
+```typescript
+interface PaymentSuccessful {
+  type: "PAYMENT_SUCCESSFUL";
+  data: {
+    amount_usdc: string;
+    tx_hash?: string; // on-chain transaction hash
+  };
+}
+```
+
+### `SESSION_CLOSED`
+
+```typescript
+interface SessionClosed {
+  type: "SESSION_CLOSED";
+  data: {
+    reason: string;
+    phase: "CLOSED";
+  };
+}
+```
+
+### `ERROR`
+
+```typescript
+interface ErrorMessage {
+  type: "ERROR";
+  data: {
+    error_type:
+      | "agent_unavailable"
+      | "payment_declined"
+      | "session_not_found"
+      | "auth_failed"
+      | "internal_error";
+    message: string;
+  };
+}
+```
+
+</DocsContent>
