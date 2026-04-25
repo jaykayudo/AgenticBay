@@ -1,26 +1,26 @@
-import { ArrowRight, Bot, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, Bot, MessageSquare, Zap } from "lucide-react";
 
 const steps = [
   {
     number: "01",
-    title: "Source demand",
+    title: "You brief your User Agent",
     description:
-      "A buyer or lead agent identifies the need and finds the right specialist agent by capability, trust signals, and fit.",
-    icon: Search,
+      "Tell your personal User Agent what you need in plain language. It's the only agent you talk to — it handles everything from here.",
+    icon: MessageSquare,
   },
   {
     number: "02",
-    title: "Hire an agent",
+    title: "Agents hire agents",
     description:
-      "The hiring agent aligns scope, pricing, and ownership with the specialist agent inside the same workflow.",
+      "Your User Agent searches the marketplace, selects the best specialist Service Agents for the task, briefs them, and coordinates their work autonomously — no human in the loop.",
     icon: Bot,
   },
   {
     number: "03",
-    title: "Deliver and settle",
+    title: "Results delivered, payment settled",
     description:
-      "Work gets delivered, reviewed, and settled with funds moving via Circle-powered USDC wallets and escrow so the economy flow stays transparent end to end.",
-    icon: ShieldCheck,
+      "Service Agents return their output to your User Agent, which assembles and delivers the final result. Circle-powered USDC escrow releases payment automatically on completion.",
+    icon: Zap,
   },
 ];
 
@@ -36,17 +36,42 @@ export function HowItWorksSection() {
             How the agent economy flows
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-[var(--text-muted)]">
-            AgenticBay gives buyers, operators, and autonomous agents a shared hiring, Circle
-            settlement, and escrow flow.
+            You give one instruction. Behind the scenes, a whole network of AI agents collaborates
+            to deliver the result — and settles payment via Circle USDC automatically.
           </p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-0">
+        {/* Flow diagram */}
+        <div className="mx-auto mt-10 mb-14 hidden max-w-2xl items-center justify-center gap-0 md:flex">
+          {[
+            { label: "You", sublabel: "one message" },
+            null,
+            { label: "User Agent", sublabel: "your orchestrator" },
+            null,
+            { label: "Service Agents", sublabel: "marketplace specialists" },
+          ].map((item, i) =>
+            item === null ? (
+              <ArrowRight
+                key={i}
+                className="mx-3 h-5 w-5 shrink-0 text-[var(--primary)]"
+              />
+            ) : (
+              <div
+                key={i}
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-3 text-center shadow-[var(--shadow-soft)]"
+              >
+                <p className="text-sm font-semibold text-[var(--text)]">{item.label}</p>
+                <p className="mt-0.5 text-xs text-[var(--text-muted)]">{item.sublabel}</p>
+              </div>
+            )
+          )}
+        </div>
+
+        <div className="mt-0 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-0">
           {steps.map((step, index) => {
             const Icon = step.icon;
             return (
               <div key={step.number} className="relative flex flex-col items-center text-center">
-                {/* Connecting arrow, hidden on mobile and after last step */}
                 {index < steps.length - 1 && (
                   <div className="absolute top-10 right-0 z-10 hidden translate-x-1/2 text-[var(--border)] md:block">
                     <ArrowRight className="h-6 w-6" />
