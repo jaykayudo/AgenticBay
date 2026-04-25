@@ -14,8 +14,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useDeferredValue, useMemo, useState } from "react";
 
-import { useApiQuery } from "@/hooks/useApi";
+import { useJobs } from "@/hooks/useJobs";
 import { apiFetch } from "@/lib/api";
+import type { Job } from "@/lib/api/jobs";
 import { cn } from "@/lib/utils";
 
 type JobStatusTab = "all" | "active" | "completed" | "failed";
@@ -52,11 +53,6 @@ type BuyerJobHistoryRecord = {
   redirectPath: string;
   mode: "hire" | "demo";
   rehirePayload: RehirePayload;
-};
-
-type BuyerJobHistoryResponse = {
-  generatedAt: string;
-  jobs: BuyerJobHistoryRecord[];
 };
 
 const statusTabs: Array<{ value: JobStatusTab; label: string }> = [
@@ -113,21 +109,35 @@ function StatusIcon({ status }: { status: BuyerJobHistoryStatus }) {
   return <LoaderCircle className="h-5 w-5 animate-spin text-[var(--primary)]" />;
 }
 
-function normalizeDateInput(value: string, endOfDay = false) {
-  if (!value) {
-    return null;
-  }
+function toApiStatus(status: JobStatusTab) {
+  if (status === "completed") return "COMPLETED" as const;
+  if (status === "failed") return "FAILED" as const;
+  if (status === "active") return "ACTIVE" as const;
+  return "ALL" as const;
+}
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
+function toHistoryRecord(job: Job): BuyerJobHistoryRecord {
+  const status =
+    job.status === "COMPLETED" ? "completed" : job.status === "FAILED" ? "failed" : "active";
 
-  if (endOfDay) {
-    date.setHours(23, 59, 59, 999);
-  }
-
-  return date;
+  return {
+    sessionId: job.sessionId,
+    agentSlug: job.agentSlug,
+    agentName: job.agentName,
+    actionId: job.actionId,
+    actionName: job.actionName,
+    inputSummary: job.inputSummary,
+    status,
+    statusLabel: status === "completed" ? "Completed" : status === "failed" ? "Failed" : "Active",
+    refundStatus: "not_applicable",
+    amountChargedUsdc: job.amountUsdc,
+    amountLockedUsdc: job.amountLockedUsdc,
+    durationLabel: job.durationLabel,
+    createdAt: job.createdAt,
+    redirectPath: job.redirectPath,
+    mode: job.mode,
+    rehirePayload: job.rehirePayload,
+  };
 }
 
 export function JobHistoryPage() {
@@ -142,53 +152,43 @@ export function JobHistoryPage() {
   const deferredMinAmount = useDeferredValue(minAmount);
   const deferredMaxAmount = useDeferredValue(maxAmount);
 
-  const jobsQuery = useApiQuery<BuyerJobHistoryResponse>(
-    ["buyer-job-history"],
-    "/buyer/jobs/history",
-    {
-      refetchInterval: 20000,
-    }
-  );
-
-  const jobs = jobsQuery.data?.jobs ?? EMPTY_JOBS;
+  const apiFilters = {
+    status: toApiStatus(activeTab),
+    agent_id: agentFilter === "all" ? undefined : agentFilter,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
+    min_amount:
+      deferredMinAmount.trim() && Number.isFinite(Number(deferredMinAmount))
+        ? Number(deferredMinAmount)
+        : undefined,
+    max_amount:
+      deferredMaxAmount.trim() && Number.isFinite(Number(deferredMaxAmount))
+        ? Number(deferredMaxAmount)
+        : undefined,
+  };
+  const jobsQuery = useJobs(apiFilters);
+  const allJobsQuery = useJobs({ status: "ALL" });
+  const jobs = jobsQuery.jobs.map(toHistoryRecord) ?? EMPTY_JOBS;
+  const allJobs = allJobsQuery.jobs.map(toHistoryRecord) ?? EMPTY_JOBS;
 
   const agentOptions = useMemo(
     () =>
-      Array.from(new Map(jobs.map((job) => [job.agentSlug, job.agentName])).entries()).sort(
+      Array.from(new Map(allJobs.map((job) => [job.agentSlug, job.agentName])).entries()).sort(
         (left, right) => left[1].localeCompare(right[1])
       ),
-    [jobs]
+    [allJobs]
   );
 
-  const filteredJobs = useMemo(() => {
-    const from = normalizeDateInput(dateFrom);
-    const to = normalizeDateInput(dateTo, true);
-    const min = Number(deferredMinAmount);
-    const max = Number(deferredMaxAmount);
-    const hasMin = deferredMinAmount.trim() !== "" && Number.isFinite(min);
-    const hasMax = deferredMaxAmount.trim() !== "" && Number.isFinite(max);
-
-    return jobs.filter((job) => {
-      const createdAt = new Date(job.createdAt);
-      const matchesStatus = activeTab === "all" || job.status === activeTab;
-      const matchesAgent = agentFilter === "all" || job.agentSlug === agentFilter;
-      const matchesFrom = !from || createdAt >= from;
-      const matchesTo = !to || createdAt <= to;
-      const matchesMin = !hasMin || job.amountChargedUsdc >= min;
-      const matchesMax = !hasMax || job.amountChargedUsdc <= max;
-
-      return matchesStatus && matchesAgent && matchesFrom && matchesTo && matchesMin && matchesMax;
-    });
-  }, [activeTab, agentFilter, dateFrom, dateTo, deferredMaxAmount, deferredMinAmount, jobs]);
+  const filteredJobs = jobs;
 
   const statusCounts = useMemo(
     () => ({
-      all: jobs.length,
-      active: jobs.filter((job) => job.status === "active").length,
-      completed: jobs.filter((job) => job.status === "completed").length,
-      failed: jobs.filter((job) => job.status === "failed").length,
+      all: allJobs.length,
+      active: allJobs.filter((job) => job.status === "active").length,
+      completed: allJobs.filter((job) => job.status === "completed").length,
+      failed: allJobs.filter((job) => job.status === "failed").length,
     }),
-    [jobs]
+    [allJobs]
   );
 
   async function startMatchingJob(job: BuyerJobHistoryRecord) {

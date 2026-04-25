@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     EMAIL_OTP_MAX_ATTEMPTS: int = 5
     EMAIL_OTP_RATE_LIMIT_WINDOW_SECONDS: int = 60 * 15
     EMAIL_OTP_RATE_LIMIT_MAX_REQUESTS: int = 3
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM_ADDRESS: str = "noreply@agentic.bay"
 
     # Orchestrator
     ORCHESTRATOR_WS_URL: str = "ws://localhost:8000"

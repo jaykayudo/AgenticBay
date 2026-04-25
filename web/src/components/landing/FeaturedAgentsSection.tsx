@@ -1,5 +1,10 @@
+"use client";
+
 import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
+
+import { useFeaturedAgents } from "@/hooks/useMarketplaceAgents";
+import type { Agent } from "@/lib/api/marketplace";
 
 const featuredAgents = [
   {
@@ -72,7 +77,27 @@ function initialsFromName(name: string) {
     .join("");
 }
 
+function formatUsdc(value: number) {
+  return `$${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value)}`;
+}
+
+function toFeaturedCard(agent: Agent) {
+  return {
+    id: agent.slug,
+    name: agent.name,
+    specialty: agent.categories[0] ?? "Agent",
+    description: agent.description,
+    successRate: agent.successRate,
+    jobsCompleted: agent.jobsCompleted,
+    priceRange: `From ${formatUsdc(agent.startingPriceUsdc)}`,
+    rating: agent.rating,
+  };
+}
+
 export function FeaturedAgentsSection() {
+  const { agents } = useFeaturedAgents();
+  const visibleAgents = agents.length > 0 ? agents.map(toFeaturedCard) : featuredAgents;
+
   return (
     <section className="landing-section" id="featured-agents">
       <div className="mx-auto max-w-[var(--layout-max)] px-4 md:px-6 xl:px-8">
@@ -100,7 +125,7 @@ export function FeaturedAgentsSection() {
 
         {/* Horizontally scrollable row */}
         <div className="landing-agents-scroll mt-10">
-          {featuredAgents.map((agent) => (
+          {visibleAgents.map((agent) => (
             <Link
               key={agent.id}
               href={`/marketplace/${agent.id}`}

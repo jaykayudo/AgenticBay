@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowDownRight,
   ArrowRight,
@@ -9,6 +11,7 @@ import {
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { useMyAgents } from "@/hooks/useMyAgents";
 import { cn } from "@/lib/utils";
 
 type Tone = "default" | "accent" | "danger" | "muted";
@@ -407,6 +410,22 @@ function toneForStatus(label: string): Tone {
 }
 
 export default function OwnerDashboardPage() {
+  const myAgentsQuery = useMyAgents();
+  const visibleTopAgents =
+    myAgentsQuery.agents.length > 0
+      ? myAgentsQuery.agents.map((agent) => ({
+          name: agent.name,
+          analyticsId: agent.id,
+          specialty: agent.categories[0] ?? "Agent",
+          jobs: agent.totalJobs,
+          success: `${Number(agent.successRate).toFixed(1)}%`,
+          response: agent.status === "ACTIVE" ? "Live" : "Paused",
+          escrowScore: agent.walletAddress ? "Ready" : "Pending",
+          status: agent.status === "ACTIVE" ? "Healthy" : agent.status,
+          rawStatus: agent.status,
+        }))
+      : topAgents.map((agent) => ({ ...agent, rawStatus: "ACTIVE" }));
+
   return (
     <div className="space-y-4 xl:space-y-6">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
@@ -554,12 +573,12 @@ export default function OwnerDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {topAgents.map((agent, index) => (
+                {visibleTopAgents.map((agent, index) => (
                   <tr
                     key={agent.name}
                     className={cn(
                       "bg-[var(--surface)] transition-colors hover:bg-[var(--surface-2)]",
-                      index !== topAgents.length - 1 && "border-b border-[var(--border)]"
+                      index !== visibleTopAgents.length - 1 && "border-b border-[var(--border)]"
                     )}
                   >
                     <td className="px-4 py-4">
@@ -587,7 +606,23 @@ export default function OwnerDashboardPage() {
                     </td>
                     <td className="px-4 py-4 text-[var(--text)]">{agent.escrowScore}</td>
                     <td className="px-4 py-4">
-                      <StatusBadge label={agent.status} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusBadge label={agent.status} />
+                        {agent.rawStatus === "ACTIVE" || agent.rawStatus === "PAUSED" ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void myAgentsQuery.setStatus(
+                                agent.analyticsId,
+                                agent.rawStatus === "ACTIVE" ? "PAUSED" : "ACTIVE"
+                              )
+                            }
+                            className="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
+                          >
+                            {agent.rawStatus === "ACTIVE" ? "Pause" : "Activate"}
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

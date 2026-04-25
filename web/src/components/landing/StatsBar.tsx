@@ -2,7 +2,7 @@
 
 import { Bot, Briefcase, DollarSign } from "lucide-react";
 
-import { useApiQuery } from "@/hooks/useApi";
+import { useMarketplaceStats } from "@/hooks/useMarketplaceAgents";
 import { cn } from "@/lib/utils";
 
 interface MarketplaceStats {
@@ -61,14 +61,7 @@ function StatSkeleton() {
 }
 
 export function StatsBar() {
-  const { data, isLoading } = useApiQuery<MarketplaceStats>(
-    ["marketplace-stats"],
-    "/marketplace/stats",
-    {
-      staleTime: 60_000,
-      retry: 1,
-    }
-  );
+  const { stats: data, isLoading } = useMarketplaceStats();
 
   const stats = data ?? fallbackStats;
 

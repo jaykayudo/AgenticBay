@@ -18,30 +18,22 @@ import {
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 
-import { useApiQuery } from "@/hooks/useApi";
+import { useTransactions, useActiveEscrow, useWalletEarnings } from "@/hooks/useTransactions";
+import { useWalletBalance } from "@/hooks/useWalletBalance";
+import { isApiError } from "@/lib/api/errors";
+import { walletApi, type WalletTransactionType } from "@/lib/api/wallet";
 import { cn } from "@/lib/utils";
-
-type CircleWalletBalanceResponse = {
-  provider: "Circle";
-  walletId: string;
-  walletAddress: string;
-  availableBalanceUsdc: number;
-  pendingBalanceUsdc: number;
-  lockedInEscrowUsdc: number;
-  lastUpdatedAt: string;
-  syncStatus: "live";
-};
 
 type WalletTab = "transactions" | "escrow" | "earnings";
 
 type WalletTransactionRecord = {
   id: string;
   direction: "inbound" | "outbound";
-  type: "deposit" | "withdrawal" | "escrow_lock" | "escrow_release" | "earning" | "refund";
+  type: WalletTransactionType;
   label: string;
   amountUsdc: number;
   timestamp: string;
-  status: "completed" | "pending" | "locked";
+  status: string;
   jobId?: string;
   jobTitle?: string;
   agentName?: string;
@@ -54,7 +46,7 @@ type WalletEscrowRecord = {
   jobTitle: string;
   agentName: string;
   amountLockedUsdc: number;
-  status: "processing" | "awaiting_payment" | "review";
+  status: string;
   lockedAt: string;
 };
 
@@ -87,6 +79,16 @@ const tabOptions: Array<{ value: WalletTab; label: string }> = [
   { value: "transactions", label: "Transactions" },
   { value: "escrow", label: "Escrow" },
   { value: "earnings", label: "Earnings" },
+];
+
+const transactionTypeOptions: Array<{ value: WalletTransactionType | "all"; label: string }> = [
+  { value: "all", label: "All types" },
+  { value: "deposit", label: "Deposits" },
+  { value: "withdrawal", label: "Withdrawals" },
+  { value: "job_payment", label: "Job payments" },
+  { value: "fee", label: "Fees" },
+  { value: "earning", label: "Earnings" },
+  { value: "refund", label: "Refunds" },
 ];
 
 const wholeNumberFormatter = new Intl.NumberFormat("en-US", {
@@ -132,8 +134,8 @@ function transactionTypeLabel(type: WalletTransactionRecord["type"]) {
   const labels: Record<WalletTransactionRecord["type"], string> = {
     deposit: "Deposit",
     withdrawal: "Withdrawal",
-    escrow_lock: "Escrow lock",
-    escrow_release: "Escrow release",
+    job_payment: "Job payment",
+    fee: "Fee",
     earning: "Earning",
     refund: "Refund",
   };
@@ -327,6 +329,7 @@ function EarningRow({ item }: { item: WalletEarningRecord }) {
 
 export function WalletManagementPage() {
   const [activeTab, setActiveTab] = useState<WalletTab>("transactions");
+  const [transactionType, setTransactionType] = useState<WalletTransactionType | "all">("all");
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<WalletModal>(null);
   const [copied, setCopied] = useState(false);
@@ -334,24 +337,114 @@ export function WalletManagementPage() {
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawConfirmed, setWithdrawConfirmed] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
-  const balanceQuery = useApiQuery<CircleWalletBalanceResponse>(
-    ["wallet-balance"],
-    "/circle/wallets/primary/balance",
-    {
-      refetchInterval: 15000,
+  const wallet = useWalletBalance();
+  const transactionsQuery = useTransactions(page, transactionType);
+  const escrowQuery = useActiveEscrow();
+  const earningsQuery = useWalletEarnings();
+  const walletAddress = wallet.address;
+  const availableBalanceUsdc = wallet.balance;
+  const usdEquivalent = availableBalanceUsdc * USD_RATE;
+  const lockedInEscrowUsdc = escrowQuery.active.reduce((total, item) => total + item.lockedAmount, 0);
+
+  const activity = useMemo<WalletActivityResponse>(() => {
+    if (activeTab === "transactions") {
+      return {
+        tab: activeTab,
+        page: transactionsQuery.page,
+        pageSize: transactionsQuery.pageSize,
+        totalItems: transactionsQuery.total,
+        totalPages: Math.max(1, Math.ceil(transactionsQuery.total / transactionsQuery.pageSize)),
+        items: transactionsQuery.transactions.map((item) => ({
+          id: item.id,
+          direction: item.direction,
+          type: item.transactionType,
+          label: item.description ?? transactionTypeLabel(item.transactionType),
+          amountUsdc: item.amount,
+          timestamp: item.createdAt,
+          status: item.status,
+          jobId:
+            typeof item.txMetadata.jobId === "string"
+              ? item.txMetadata.jobId
+              : typeof item.txMetadata.job_id === "string"
+                ? item.txMetadata.job_id
+                : undefined,
+          jobTitle:
+            typeof item.txMetadata.jobTitle === "string"
+              ? item.txMetadata.jobTitle
+              : typeof item.txMetadata.job_title === "string"
+                ? item.txMetadata.job_title
+                : undefined,
+          agentName:
+            typeof item.txMetadata.agentName === "string"
+              ? item.txMetadata.agentName
+              : typeof item.txMetadata.agent_name === "string"
+                ? item.txMetadata.agent_name
+                : undefined,
+          counterparty: item.direction === "inbound" ? item.fromAddress ?? undefined : item.toAddress ?? undefined,
+        })),
+      };
     }
-  );
 
-  const activityQuery = useApiQuery<WalletActivityResponse>(
-    ["wallet-activity", activeTab, page],
-    `/circle/wallets/primary/activity?tab=${activeTab}&page=${page}&limit=${PAGE_SIZE}`
-  );
+    if (activeTab === "escrow") {
+      return {
+        tab: activeTab,
+        page: 1,
+        pageSize: escrowQuery.active.length,
+        totalItems: escrowQuery.active.length,
+        totalPages: 1,
+        items: escrowQuery.active.map((item) => ({
+          id: item.invoiceId,
+          jobId: item.jobId,
+          jobTitle: `Job ${item.jobId.slice(0, 8)}`,
+          agentName: item.agentName ?? "Agent",
+          amountLockedUsdc: item.lockedAmount,
+          status: item.status,
+          lockedAt: item.createdAt,
+        })),
+      };
+    }
 
-  const wallet = balanceQuery.data;
-  const activity = activityQuery.data;
-  const walletAddress = wallet?.walletAddress ?? "";
-  const usdEquivalent = (wallet?.availableBalanceUsdc ?? 0) * USD_RATE;
+    const earningItems = earningsQuery.earnings?.items ?? [];
+    return {
+      tab: activeTab,
+      page: earningsQuery.earnings?.meta.page ?? 1,
+      pageSize: earningsQuery.earnings?.meta.pageSize ?? earningItems.length,
+      totalItems: earningsQuery.earnings?.meta.total ?? earningItems.length,
+      totalPages: Math.max(
+        1,
+        Math.ceil(
+          (earningsQuery.earnings?.meta.total ?? earningItems.length) /
+            Math.max(earningsQuery.earnings?.meta.pageSize ?? PAGE_SIZE, 1)
+        )
+      ),
+      items: earningItems.map((item) => ({
+        id: item.id,
+        agentSlug:
+          typeof item.txMetadata.agentSlug === "string" ? item.txMetadata.agentSlug : "agent",
+        agentName:
+          typeof item.txMetadata.agentName === "string"
+            ? item.txMetadata.agentName
+            : "Agent earnings",
+        sourceJobId:
+          typeof item.txMetadata.jobId === "string" ? item.txMetadata.jobId : item.id,
+        sourceJobTitle:
+          typeof item.txMetadata.jobTitle === "string" ? item.txMetadata.jobTitle : "Marketplace job",
+        amountUsdc: item.amount,
+        timestamp: item.createdAt,
+        status: item.status === "completed" ? "paid" : "pending",
+      })),
+    };
+  }, [activeTab, earningsQuery.earnings, escrowQuery.active, transactionsQuery]);
+
+  const activityLoading =
+    activeTab === "transactions"
+      ? transactionsQuery.isLoading
+      : activeTab === "escrow"
+        ? escrowQuery.isLoading
+        : earningsQuery.isLoading;
 
   async function copyWalletAddress() {
     if (!walletAddress) {
@@ -363,14 +456,49 @@ export function WalletManagementPage() {
     window.setTimeout(() => setCopied(false), 1800);
   }
 
-  function submitWithdraw() {
-    setWithdrawConfirmed(true);
-    window.setTimeout(() => {
+  async function submitWithdraw() {
+    const amount = Number(withdrawAmount);
+    setWithdrawError(null);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setWithdrawError("Enter a valid withdrawal amount.");
+      return;
+    }
+
+    if (amount > availableBalanceUsdc) {
+      setWithdrawError("Withdrawal amount exceeds your available balance.");
+      return;
+    }
+
+    if (!withdrawAddress.trim()) {
+      setWithdrawError("Enter a destination address.");
+      return;
+    }
+
+    setIsWithdrawing(true);
+    try {
+      await walletApi.withdraw(amount, withdrawAddress.trim());
+      await Promise.all([wallet.refresh(), transactionsQuery.refresh()]);
+      setWithdrawConfirmed(true);
+      window.setTimeout(() => {
+        setModal(null);
+        setWithdrawConfirmed(false);
+        setWithdrawAddress("");
+        setWithdrawAmount("");
+      }, 1300);
+    } catch (error) {
+      setWithdrawError(isApiError(error) ? error.message : "Withdrawal failed.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  }
+
+  function closeWithdrawModal() {
       setModal(null);
       setWithdrawConfirmed(false);
       setWithdrawAddress("");
       setWithdrawAmount("");
-    }, 1300);
+      setWithdrawError(null);
   }
 
   return (
@@ -417,20 +545,20 @@ export function WalletManagementPage() {
               <p className="text-sm font-medium text-[var(--text-muted)]">Available balance</p>
               <div className="mt-4 flex items-end gap-3">
                 <p className="text-4xl font-semibold text-[var(--text)] tabular-nums sm:text-5xl">
-                  {wallet ? preciseNumberFormatter.format(wallet.availableBalanceUsdc) : "--"}
+                  {wallet.isLoading ? "--" : preciseNumberFormatter.format(availableBalanceUsdc)}
                 </p>
                 <span className="pb-1 text-sm font-semibold text-[var(--text-muted)]">USDC</span>
               </div>
               <p className="mt-3 text-sm text-[var(--text-muted)]">
-                {wallet ? `${formatUsd(usdEquivalent)} USD equivalent` : "Loading USD equivalent"}
+                {wallet.isLoading ? "Loading USD equivalent" : `${formatUsd(usdEquivalent)} USD equivalent`}
               </p>
             </div>
 
             <span
               className="app-status-badge"
-              data-tone={wallet?.syncStatus === "live" ? "accent" : "default"}
+              data-tone={wallet.error ? "danger" : "accent"}
             >
-              {wallet?.provider ?? "Circle"} {wallet?.syncStatus ?? "syncing"}
+              Circle {wallet.error ? "sync issue" : "live"}
             </span>
           </div>
 
@@ -438,19 +566,19 @@ export function WalletManagementPage() {
             <div className="app-subtle p-4">
               <p className="text-sm text-[var(--text-muted)]">Pending</p>
               <p className="mt-2 text-xl font-semibold text-[var(--text)] tabular-nums">
-                {wallet ? formatUsdc(wallet.pendingBalanceUsdc, true) : "--"}
+                {wallet.isLoading ? "--" : formatUsdc(0, true)}
               </p>
             </div>
             <div className="app-subtle p-4">
               <p className="text-sm text-[var(--text-muted)]">Locked</p>
               <p className="mt-2 text-xl font-semibold text-[var(--text)] tabular-nums">
-                {wallet ? formatUsdc(wallet.lockedInEscrowUsdc, true) : "--"}
+                {wallet.isLoading ? "--" : formatUsdc(lockedInEscrowUsdc, true)}
               </p>
             </div>
             <div className="app-subtle p-4">
               <p className="text-sm text-[var(--text-muted)]">Wallet ID</p>
               <p className="mt-2 truncate text-sm font-medium text-[var(--text)]">
-                {wallet?.walletId ?? "Loading"}
+                {wallet.walletId || "Loading"}
               </p>
             </div>
           </div>
@@ -531,21 +659,40 @@ export function WalletManagementPage() {
               </button>
             ))}
           </div>
+          {activeTab === "transactions" ? (
+            <label className="flex h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--text-muted)] shadow-[var(--shadow-soft)]">
+              <span>Type</span>
+              <select
+                value={transactionType}
+                onChange={(event) => {
+                  setTransactionType(event.target.value as WalletTransactionType | "all");
+                  setPage(1);
+                }}
+                className="bg-transparent font-medium text-[var(--text)] outline-none"
+              >
+                {transactionTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
 
         <div className="mt-6 space-y-3">
-          {activityQuery.isLoading ? (
+          {activityLoading ? (
             <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-5 text-sm text-[var(--text-muted)]">
               <LoaderCircle className="h-4 w-4 animate-spin text-[var(--primary)]" />
               Loading wallet activity
             </div>
           ) : null}
 
-          {!activityQuery.isLoading && activity?.items.length === 0 ? (
+          {!activityLoading && activity?.items.length === 0 ? (
             <EmptyState label="No wallet records are available for this view yet." />
           ) : null}
 
-          {!activityQuery.isLoading && activity
+          {!activityLoading && activity
             ? activity.items.map((item) => {
                 if (isTransactionRecord(item)) {
                   return <TransactionRow key={item.id} item={item} />;
@@ -589,27 +736,31 @@ export function WalletManagementPage() {
         ) : null}
       </section>
 
-      {modal === "deposit" && wallet ? (
+      {modal === "deposit" ? (
         <Modal title="Deposit USDC" onClose={() => setModal(null)}>
           <div className="mt-5 space-y-4">
             <div className="app-subtle p-4">
               <p className="text-sm font-medium text-[var(--text)]">Circle deposit address</p>
               <p className="mt-2 text-sm leading-6 break-all text-[var(--text-muted)]">
-                {wallet.walletAddress}
+                {walletAddress || "Loading deposit address"}
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
-              <AddressQr value={wallet.walletAddress} />
+              {walletAddress ? <AddressQr value={walletAddress} /> : null}
               <div className="space-y-3 text-sm leading-6 text-[var(--text-muted)]">
-                <p>Send only USDC to this Circle-powered wallet address.</p>
+                <p>
+                  {wallet.depositInstructions?.instructions ??
+                    "Send only USDC to this Circle-powered wallet address."}
+                </p>
                 <p>Deposits appear after network confirmation and refresh automatically.</p>
                 <button
                   type="button"
                   onClick={() => void copyWalletAddress()}
+                  disabled={!walletAddress}
                   className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--primary)] px-4 text-sm font-semibold text-[var(--primary-foreground)]"
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied ? "Copied" : shortAddress(wallet.walletAddress)}
+                  {copied ? "Copied" : walletAddress ? shortAddress(walletAddress) : "Loading"}
                 </button>
               </div>
             </div>
@@ -618,7 +769,7 @@ export function WalletManagementPage() {
       ) : null}
 
       {modal === "withdraw" ? (
-        <Modal title="Withdraw USDC" onClose={() => setModal(null)}>
+        <Modal title="Withdraw USDC" onClose={closeWithdrawModal}>
           <div className="mt-5 space-y-4">
             <label className="grid gap-2 text-sm">
               <span className="font-medium text-[var(--text)]">Destination address</span>
@@ -643,14 +794,29 @@ export function WalletManagementPage() {
               Withdrawals are submitted through the Circle wallet rail and may require final
               compliance review before funds leave escrow-safe custody.
             </div>
+            {withdrawError ? (
+              <div className="rounded-2xl border border-[var(--danger-soft)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger)]">
+                {withdrawError}
+              </div>
+            ) : null}
             <button
               type="button"
-              disabled={!withdrawAddress.trim() || !Number(withdrawAmount)}
-              onClick={submitWithdraw}
+              disabled={!withdrawAddress.trim() || !Number(withdrawAmount) || isWithdrawing}
+              onClick={() => void submitWithdraw()}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)] transition hover:opacity-95 disabled:opacity-50"
             >
-              {withdrawConfirmed ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-              {withdrawConfirmed ? "Withdrawal queued" : "Confirm withdrawal"}
+              {withdrawConfirmed ? (
+                <Check className="h-4 w-4" />
+              ) : isWithdrawing ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {withdrawConfirmed
+                ? "Withdrawal queued"
+                : isWithdrawing
+                  ? "Submitting..."
+                  : "Confirm withdrawal"}
             </button>
           </div>
         </Modal>

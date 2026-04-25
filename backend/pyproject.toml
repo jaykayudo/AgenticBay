@@ -30,6 +30,7 @@ dependencies = [
     "jwt>=1.4.0",
     "aiosqlite>=0.22.1",
     "numpy>=2.4.4",
+    "resend>=2.29.0",
 ]
 
 [project.optional-dependencies]

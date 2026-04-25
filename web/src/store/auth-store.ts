@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 
+import { tokenManager } from "@/lib/auth/tokenManager";
+
 type AuthUser = {
   id: string;
   email: string;
@@ -57,19 +59,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
   setSession: ({ accessToken, refreshToken, user }) => {
+    if (accessToken && refreshToken) {
+      tokenManager.setTokens(accessToken, refreshToken);
+    } else {
+      tokenManager.clearAuth();
+    }
+
     if (typeof window !== "undefined") {
-      if (accessToken) {
-        localStorage.setItem("access_token", accessToken);
-      } else {
-        localStorage.removeItem("access_token");
-      }
-
-      if (refreshToken) {
-        localStorage.setItem("refresh_token", refreshToken);
-      } else {
-        localStorage.removeItem("refresh_token");
-      }
-
       if (user) {
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
       } else {
@@ -85,11 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
   clearSession: () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem(AUTH_USER_KEY);
-    }
+    tokenManager.clearAuth();
 
     set({
       accessToken: null,
@@ -100,4 +92,4 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 }));
 
-export type { AuthUser };
+export type { AuthSession, AuthUser };
