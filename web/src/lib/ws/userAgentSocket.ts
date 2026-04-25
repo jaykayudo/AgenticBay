@@ -67,6 +67,8 @@ export class UserAgentSocket {
   private listeners: Set<Listener> = new Set();
   private statusListeners: Set<StatusListener> = new Set();
   private reconnectTimer: number | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnect = 5;
   private reconnectDelay = 1000;
   private maxReconnectDelay = 30000;
   private closedByClient = false;
@@ -119,6 +121,7 @@ export class UserAgentSocket {
       this.ws = new WebSocket(buildSocketUrl(this.sessionId, this.token));
 
       this.ws.onopen = () => {
+        this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
         this.setState("connected");
         resolve();
@@ -151,6 +154,12 @@ export class UserAgentSocket {
   }
 
   private scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnect) {
+      this.setState("closed");
+      return;
+    }
+
+    this.reconnectAttempts += 1;
     this.setState("reconnecting");
     const delay = this.reconnectDelay;
     this.reconnectTimer = window.setTimeout(() => {

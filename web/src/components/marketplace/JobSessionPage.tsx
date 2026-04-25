@@ -646,7 +646,7 @@ type WorkspaceAction =
   | "RESUME_JOB"
   | "RETRY_STEP"
   | "SUMMARIZE_PROGRESS"
-  | "CLOSE_JOB";
+  | "CLOSE";
 
 export function JobSessionPage({ sessionId }: { sessionId: string }) {
   const sessionQuery = useApiQuery<MarketplaceSessionRead>(
@@ -913,8 +913,8 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
           });
           break;
         case "PAYMENT": {
-          const contractData = maybeRecord(data?.contract_data);
-          const invoiceId = getString(contractData, "invoice_id", `invoice-${Date.now()}`);
+          const paymentInfo = maybeRecord(data?.payment_info);
+          const invoiceId = getString(paymentInfo, "invoice_id", `invoice-${Date.now()}`);
           setSessionStatus("awaiting_payment");
           setPaymentState("pending");
           setActivePaymentId(invoiceId);
@@ -934,8 +934,8 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
               amount: getNumber(data, "amount", session?.priceUsdc ?? 0),
               description: getString(data, "description", "Escrow payment"),
               invoiceId,
-              contractAddress: getString(contractData, "invoice_contract", "0xESCROW"),
-              functionName: getString(contractData, "function_name", "payInvoice"),
+              contractAddress: getString(paymentInfo, "invoice_wallet", "0xESCROW"),
+              functionName: "payInvoice",
             },
           });
           break;
@@ -1124,13 +1124,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
     }
 
     sessionStartedRef.current = true;
-    realtimeSession.sendCommand("START", {
-      job_session_id: session.sessionId,
-      job_session_auth_token: session.sessionToken,
-      action_id: session.actionId,
-      input_summary: session.inputSummary,
-    });
-  }, [realtimeSession, session]);
+  }, [realtimeSession.connectionState, session]);
 
   useEffect(() => {
     if (!session || session.socketUrl.startsWith("mock://") || realtimeSession.feed.length === 0) {
@@ -1509,7 +1503,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
       // Some current sessions are mock-backed; still close the local workspace state.
     }
 
-    const sent = sendWorkspaceAction("CLOSE_JOB", {
+    const sent = sendWorkspaceAction("CLOSE", {
       reason: "user_cancelled",
     });
 
@@ -1526,7 +1520,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
     appendLog("Cancel job request sent.", "warning");
     appendFeed({
       kind: "user",
-      type: "CLOSE_JOB",
+      type: "CLOSE",
       sender: "user",
       title: "Cancel requested",
       body: "You asked the orchestrator to stop this job session.",
@@ -1986,7 +1980,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
         <Modal title="Cancel this job?" onClose={() => setCancelOpen(false)}>
           <div className="mt-5 space-y-4">
             <p className="text-sm leading-6 text-[var(--text-muted)]">
-              This sends a CLOSE_JOB request to the orchestrator and stops further execution. Escrow
+              This sends a CLOSE request to the orchestrator and stops further execution. Escrow
               status will be updated based on the current payment state.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">

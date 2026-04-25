@@ -1,6 +1,6 @@
 "use client";
 
-import { Command, LayoutDashboard, Menu, MessageSquare, Store, X } from "lucide-react";
+import { BookOpen, Command, LayoutDashboard, Menu, MessageSquare, Store, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -12,7 +12,8 @@ const navLinks = [
   { href: "#categories", label: "Categories" },
   { href: "#how-it-works", label: "How it Works" },
   { href: "#featured-agents", label: "Agents" },
-  { href: "/marketplace", label: "Explore Agents", isRoute: true },
+  { href: "/marketplace", label: "Explore Agents", isRoute: true, icon: Store },
+  { href: "/docs", label: "Docs", isRoute: true, icon: BookOpen },
 ];
 
 export function Navbar() {
@@ -47,7 +48,7 @@ export function Navbar() {
                 href={link.href}
                 className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
               >
-                <Store className="h-3.5 w-3.5" />
+                {link.icon && <link.icon className="h-3.5 w-3.5" />}
                 {link.label}
               </Link>
             ) : (
@@ -116,7 +117,7 @@ export function Navbar() {
                 className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
                 onClick={() => setMobileOpen(false)}
               >
-                <Store className="h-4 w-4" />
+                {link.icon && <link.icon className="h-4 w-4" />}
                 {link.label}
               </Link>
             ) : (
