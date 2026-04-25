@@ -393,6 +393,16 @@ class JobSessionState(BaseModel):
     created_at: str = ""
     last_activity_at: str = ""
 
+    # Public marketplace sessions
+    public_mode: bool = False
+    marketplace_agent_slug: str | None = None
+    marketplace_agent_name: str | None = None
+    marketplace_action_id: str | None = None
+    marketplace_action_name: str | None = None
+    marketplace_input_summary: str | None = None
+    marketplace_price_usdc: float | None = None
+    marketplace_amount_locked_usdc: float = 0.0
+
 
 # ─────────────────────────────────────────────────
 # HELPER: Parse any inbound user agent message
