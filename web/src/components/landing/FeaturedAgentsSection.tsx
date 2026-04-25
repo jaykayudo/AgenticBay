@@ -9,7 +9,7 @@ const featuredAgents = [
     description: "Deep market intelligence, competitor analysis, and strategic research briefs.",
     successRate: 99.1,
     jobsCompleted: 284,
-    priceRange: "$150 – $4,800",
+    priceRange: "$150 - $4,800",
     rating: 4.9,
   },
   {
@@ -19,7 +19,7 @@ const featuredAgents = [
     description: "Workflow automation, data pipelines, and integration orchestration.",
     successRate: 97.8,
     jobsCompleted: 213,
-    priceRange: "$80 – $3,200",
+    priceRange: "$80 - $3,200",
     rating: 4.8,
   },
   {
@@ -29,7 +29,7 @@ const featuredAgents = [
     description: "24/7 tier-1 inbox coverage, ticket routing, and escalation handling.",
     successRate: 98.3,
     jobsCompleted: 412,
-    priceRange: "$50 – $1,950",
+    priceRange: "$50 - $1,950",
     rating: 4.9,
   },
   {
@@ -39,7 +39,7 @@ const featuredAgents = [
     description: "Component documentation, design system audits, and asset generation.",
     successRate: 95.9,
     jobsCompleted: 127,
-    priceRange: "$120 – $2,600",
+    priceRange: "$120 - $2,600",
     rating: 4.6,
   },
   {
@@ -49,7 +49,7 @@ const featuredAgents = [
     description: "Smart contract auditing, vulnerability scanning, and compliance reviews.",
     successRate: 99.4,
     jobsCompleted: 89,
-    priceRange: "$200 – $5,500",
+    priceRange: "$200 - $5,500",
     rating: 4.9,
   },
   {
@@ -59,7 +59,7 @@ const featuredAgents = [
     description: "Predictive modeling, dashboard creation, and large-scale data processing.",
     successRate: 96.7,
     jobsCompleted: 156,
-    priceRange: "$100 – $3,800",
+    priceRange: "$100 - $3,800",
     rating: 4.7,
   },
 ];

@@ -124,34 +124,29 @@ function RevenueChart({ series }: { series: AgentAnalyticsResponse["revenueSerie
   const maxAmount = Math.max(...series.map((item) => item.amount), 1);
 
   return (
-    <div className="mt-6 overflow-x-auto">
-      <div className="min-w-[560px] rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-2)] p-4 sm:p-5">
-        <div className="flex h-[280px] items-end gap-3">
-          {series.map((item, index) => {
-            const height = Math.max((item.amount / maxAmount) * 100, item.amount > 0 ? 12 : 4);
+    <div className="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-2)] p-4 sm:p-5">
+      <div className="grid min-h-[260px] grid-cols-4 items-end gap-3 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-[repeat(auto-fit,minmax(3rem,1fr))]">
+        {series.map((item, index) => {
+          const height = Math.max((item.amount / maxAmount) * 100, item.amount > 0 ? 12 : 4);
 
-            return (
-              <div
-                key={`${item.label}-${index}`}
-                className="flex min-w-0 flex-1 flex-col justify-end"
-              >
-                <div className="mb-3 text-center text-xs font-medium text-[var(--text-muted)] tabular-nums">
-                  {item.amount > 0 ? currencyFormatter.format(item.amount) : "--"}
-                </div>
-                <div className="flex h-[210px] items-end justify-center rounded-[1.2rem] bg-[color-mix(in_srgb,var(--surface)_82%,transparent)] px-2 pb-2">
-                  <div
-                    className="w-full rounded-[0.95rem] bg-[var(--primary)] transition-[height] duration-500 ease-out"
-                    style={{ height: `${height}%` }}
-                    title={`${item.label}: ${currencyFormatter.format(item.amount)} across ${item.jobs} jobs`}
-                  />
-                </div>
-                <div className="mt-3 text-center text-xs text-[var(--text-muted)]">
-                  {item.label}
-                </div>
+          return (
+            <div key={`${item.label}-${index}`} className="flex min-w-0 flex-col justify-end">
+              <div className="mb-3 truncate text-center text-xs font-medium text-[var(--text-muted)] tabular-nums">
+                {item.amount > 0 ? currencyFormatter.format(item.amount) : "--"}
               </div>
-            );
-          })}
-        </div>
+              <div className="flex h-[190px] items-end justify-center rounded-[1.2rem] bg-[color-mix(in_srgb,var(--surface)_82%,transparent)] px-1.5 pb-2 sm:px-2">
+                <div
+                  className="w-full rounded-[0.85rem] bg-[var(--primary)] transition-[height] duration-500 ease-out"
+                  style={{ height: `${height}%` }}
+                  title={`${item.label}: ${currencyFormatter.format(item.amount)} across ${item.jobs} jobs`}
+                />
+              </div>
+              <div className="mt-3 truncate text-center text-xs text-[var(--text-muted)]">
+                {item.label}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -46,7 +46,7 @@ export function HowItWorksSection() {
             const Icon = step.icon;
             return (
               <div key={step.number} className="relative flex flex-col items-center text-center">
-                {/* Connecting arrow — hidden on mobile and after last step */}
+                {/* Connecting arrow, hidden on mobile and after last step */}
                 {index < steps.length - 1 && (
                   <div className="absolute top-10 right-0 z-10 hidden translate-x-1/2 text-[var(--border)] md:block">
                     <ArrowRight className="h-6 w-6" />

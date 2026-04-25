@@ -11,7 +11,9 @@ from app.auth.otp_store import OTPStore, generate_otp_code, normalize_email
 from app.auth.rate_limiter import OTPSendRateLimiter
 from app.auth.session_manager import IssuedTokenPair, SessionManager
 from app.core.config import settings
+from app.core.database import AsyncSessionLocal
 from app.models.users import User, UserStatus
+from app.services.circle_client import CircleClient
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +36,27 @@ class EmailDelivery:
 
 
 class CircleWalletService:
+    def __init__(self, circle: CircleClient | None = None) -> None:
+        self.circle = circle or CircleClient()
+
     async def create_wallet_for_user(self, user_id: str, email: str) -> None:
-        logger.info("Triggering Circle wallet creation for user %s (%s)", user_id, email)
+        async with AsyncSessionLocal() as db:
+            user = await db.get(User, user_id)
+            if user is None:
+                logger.warning("Cannot create Circle wallet; user %s no longer exists", user_id)
+                return
+            if user.circle_wallet_id and user.wallet_address:
+                return
+
+            wallet = await self.circle.create_developer_wallet(name=f"User Wallet {email}")
+            user.circle_wallet_id = str(wallet.get("id") or "")
+            user.wallet_address = str(wallet.get("address") or "")
+            if not user.circle_wallet_id or not user.wallet_address:
+                logger.error("Circle wallet response missing id/address for user %s", user_id)
+                return
+
+            await db.commit()
+            logger.info("Created Circle wallet for user %s (%s)", user_id, email)
 
 
 @dataclass(slots=True)

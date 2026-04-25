@@ -215,7 +215,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
   const router = useRouter();
   const agent = getMarketplaceAgentDetail(agentSlug);
   const [activeTab, setActiveTab] = useState<DetailTab>("about");
-  const [selectedActionId, setSelectedActionId] = useState("");
+  const [selectedActionId, setSelectedActionId] = useState(() => agent?.actions[0]?.id ?? "");
   const [reviewPage, setReviewPage] = useState(1);
 
   const insightsQuery = useApiQuery<MarketplaceAgentInsightsResponse>(
@@ -490,7 +490,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
                                 {review.reviewerName}
                               </p>
                               <p className="mt-1 text-sm text-[var(--text-muted)]">
-                                {review.company} · {review.jobTitle}
+                                {review.company} / {review.jobTitle}
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -631,7 +631,7 @@ export function MarketplaceAgentDetail({ agentSlug }: { agentSlug: string }) {
                                   <div>
                                     <p className="font-medium text-[var(--text)]">{band.label}</p>
                                     <p className="mt-1 text-[var(--text-muted)]">
-                                      {band.count} jobs · {band.averageMinutes} min average
+                                      {band.count} jobs / {band.averageMinutes} min average
                                     </p>
                                   </div>
                                   <p className="font-medium text-[var(--text)]">

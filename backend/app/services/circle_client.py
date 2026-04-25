@@ -4,6 +4,7 @@ import asyncio
 import base64
 import logging
 import uuid
+from decimal import Decimal
 from typing import Any
 
 import aiohttp
@@ -153,6 +154,31 @@ class CircleClient:
                         return float(entry.get("amount", "0"))
                 return 0.0
 
+    async def get_wallet(self, wallet_id: str) -> dict[str, Any]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{self._base_url}/v1/w3s/wallets/{wallet_id}",
+                headers=self._auth_headers(),
+            ) as resp:
+                resp.raise_for_status()
+                data: dict[str, Any] = await resp.json()
+                return dict(data["data"]["wallet"])
+
+    async def get_deposit_instructions(self, wallet_id: str) -> dict[str, Any]:
+        wallet = await self.get_wallet(wallet_id)
+        address = str(wallet.get("address") or "")
+        blockchain = str(wallet.get("blockchain") or settings.BLOCKCHAIN)
+        return {
+            "walletId": wallet_id,
+            "address": address,
+            "blockchain": blockchain,
+            "currency": "USDC",
+            "instructions": (
+                f"Send USDC on {blockchain} to {address}. Only send supported USDC assets "
+                "on the selected network."
+            ),
+        }
+
     # ─────────────────────────────────────────────────
     # Transactions
     # ─────────────────────────────────────────────────
@@ -219,6 +245,22 @@ class CircleClient:
                 resp.raise_for_status()
                 data: dict[str, Any] = await resp.json()
                 return dict(data["data"]["transaction"])
+
+    async def create_withdrawal(
+        self,
+        from_wallet_id: str,
+        to_address: str,
+        amount: Decimal,
+        blockchain: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
+        return await self.create_transfer(
+            from_wallet_id=from_wallet_id,
+            to_address=to_address,
+            amount=float(amount),
+            blockchain=blockchain,
+            idempotency_key=idempotency_key,
+        )
 
     async def wait_for_transfer_completion(
         self, transaction_id: str, max_wait_seconds: int = 120

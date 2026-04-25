@@ -214,18 +214,18 @@ export function BuyerDashboardPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
+            <Link
+              href="/dashboard/wallet"
               className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]"
             >
               Deposit
-            </button>
-            <button
-              type="button"
+            </Link>
+            <Link
+              href="/dashboard/wallet"
               className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--border)] px-5 text-sm font-semibold text-[var(--text)]"
             >
               Withdraw
-            </button>
+            </Link>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
@@ -367,71 +367,89 @@ export function BuyerDashboardPage() {
         </div>
 
         <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
-          {recommendedAgents.map((agent) => (
-            <article
-              key={agent.id}
-              className="max-w-[320px] min-w-[280px] shrink-0 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="grid h-12 w-12 place-items-center rounded-2xl text-sm font-semibold shadow-[var(--shadow-soft)]"
-                    style={{
-                      backgroundColor: agent.avatar.bg,
-                      color: agent.avatar.fg,
-                    }}
-                  >
-                    {agent.avatar.label}
-                  </div>
-                  <div>
-                    <p className="font-medium text-[var(--text)]">{agent.name}</p>
-                    <p className="mt-1 text-sm text-[var(--text-muted)]">{agent.speedLabel}</p>
-                  </div>
-                </div>
+          {recommendedQuery.isLoading
+            ? Array.from({ length: 3 }, (_, index) => (
+                <div
+                  key={index}
+                  className="h-[252px] min-w-[280px] shrink-0 animate-pulse rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-2)]"
+                />
+              ))
+            : null}
 
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--text-muted)]">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  {agent.rating.toFixed(1)}
-                </span>
-              </div>
-
-              <p className="mt-4 text-sm leading-6 text-[var(--text-muted)]">{agent.reason}</p>
-              <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
-                {agent.description}
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {agent.tags.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-xs text-[var(--text-muted)]"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-5 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-[var(--text-muted)]">Starting at</p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--text)]">
-                    {formatUsdc(agent.startingPriceUsdc)}
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--text-muted)]">
-                    {wholeNumberFormatter.format(agent.reviewCount)} reviews
-                  </p>
-                </div>
-
-                <Link
-                  href={`/marketplace/${agent.slug}`}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-4 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]"
+          {!recommendedQuery.isLoading && recommendedAgents.length > 0
+            ? recommendedAgents.map((agent) => (
+                <article
+                  key={agent.id}
+                  className="max-w-[320px] min-w-[280px] shrink-0 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5"
                 >
-                  View agent
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </article>
-          ))}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="grid h-12 w-12 place-items-center rounded-2xl text-sm font-semibold shadow-[var(--shadow-soft)]"
+                        style={{
+                          backgroundColor: agent.avatar.bg,
+                          color: agent.avatar.fg,
+                        }}
+                      >
+                        {agent.avatar.label}
+                      </div>
+                      <div>
+                        <p className="font-medium text-[var(--text)]">{agent.name}</p>
+                        <p className="mt-1 text-sm text-[var(--text-muted)]">{agent.speedLabel}</p>
+                      </div>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--text-muted)]">
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                      {agent.rating.toFixed(1)}
+                    </span>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-6 text-[var(--text-muted)]">{agent.reason}</p>
+                  <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
+                    {agent.description}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {agent.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-xs text-[var(--text-muted)]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-[var(--text-muted)]">Starting at</p>
+                      <p className="mt-1 text-lg font-semibold text-[var(--text)]">
+                        {formatUsdc(agent.startingPriceUsdc)}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--text-muted)]">
+                        {wholeNumberFormatter.format(agent.reviewCount)} reviews
+                      </p>
+                    </div>
+
+                    <Link
+                      href={`/marketplace/${agent.slug}`}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-4 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]"
+                    >
+                      View agent
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </article>
+              ))
+            : null}
+
+          {!recommendedQuery.isLoading && recommendedAgents.length === 0 ? (
+            <div className="app-subtle w-full p-6 text-sm leading-6 text-[var(--text-muted)]">
+              Recommended specialists are not available right now. Browse the marketplace to keep
+              discovery moving while the recommendation feed catches up.
+            </div>
+          ) : null}
         </div>
       </section>
 

@@ -51,6 +51,32 @@ type MarketplaceAgentInsightsResponse = {
   }>;
 };
 
+type MarketplaceSearchResult = {
+  agentSlug: string;
+  agentName: string;
+  description: string;
+  rating: number;
+  jobsCompleted: number;
+  startingPriceUsdc: number;
+  matchPercentage: number;
+  reason: string;
+  primaryAction: MarketplaceSessionCreateRequest;
+  avatar: {
+    label: string;
+    bg: string;
+    fg: string;
+  };
+};
+
+type MarketplaceSearchResponse = {
+  query: string;
+  generatedAt: string;
+  resultCount: number;
+  orchestratorSuggestion: string;
+  bestMatch: MarketplaceSearchResult | null;
+  results: MarketplaceSearchResult[];
+};
+
 type AgentAnalyticsResponse = {
   agentId: string;
   agentName: string;
@@ -140,6 +166,52 @@ type CircleWalletBalanceResponse = {
   syncStatus: "live";
 };
 
+type WalletActivityTab = "transactions" | "escrow" | "earnings";
+
+type WalletTransactionRecord = {
+  id: string;
+  direction: "inbound" | "outbound";
+  type: "deposit" | "withdrawal" | "escrow_lock" | "escrow_release" | "earning" | "refund";
+  label: string;
+  amountUsdc: number;
+  timestamp: string;
+  status: "completed" | "pending" | "locked";
+  jobId?: string;
+  jobTitle?: string;
+  agentName?: string;
+  counterparty?: string;
+};
+
+type WalletEscrowRecord = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  agentName: string;
+  amountLockedUsdc: number;
+  status: "processing" | "awaiting_payment" | "review";
+  lockedAt: string;
+};
+
+type WalletEarningRecord = {
+  id: string;
+  agentSlug: string;
+  agentName: string;
+  sourceJobId: string;
+  sourceJobTitle: string;
+  amountUsdc: number;
+  timestamp: string;
+  status: "paid" | "pending";
+};
+
+type WalletActivityResponse = {
+  tab: WalletActivityTab;
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  items: Array<WalletTransactionRecord | WalletEscrowRecord | WalletEarningRecord>;
+};
+
 type BuyerDashboardSummaryResponse = {
   generatedAt: string;
   stats: {
@@ -160,6 +232,32 @@ type BuyerDashboardSummaryResponse = {
   }>;
 };
 
+type BuyerJobHistoryStatus = "active" | "completed" | "failed";
+
+type BuyerJobHistoryRecord = {
+  sessionId: string;
+  agentSlug: string;
+  agentName: string;
+  actionId: string;
+  actionName: string;
+  inputSummary: string;
+  status: BuyerJobHistoryStatus;
+  statusLabel: "Active" | "Completed" | "Failed";
+  refundStatus: "not_applicable" | "refunded" | "pending_refund";
+  amountChargedUsdc: number;
+  amountLockedUsdc: number;
+  durationLabel: string;
+  createdAt: string;
+  redirectPath: string;
+  mode: "hire" | "demo";
+  rehirePayload: MarketplaceSessionCreateRequest;
+};
+
+type BuyerJobHistoryResponse = {
+  generatedAt: string;
+  jobs: BuyerJobHistoryRecord[];
+};
+
 type BuyerRecommendedAgent = {
   id: string;
   slug: string;
@@ -178,7 +276,72 @@ type BuyerRecommendedAgent = {
   reason: string;
 };
 
+type UserSettingsProfile = {
+  username: string;
+  email: string;
+  role: "buyer" | "agent_owner" | "admin";
+  avatarInitials: string;
+  avatarColor: string;
+};
+
+type UserSettingsApiKey = {
+  id: string;
+  environment: "Development" | "Production";
+  prefix: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+};
+
+type UserSettingsNotification = {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+};
+
+type UserSettingsResponse = {
+  profile: UserSettingsProfile;
+  apiKeys: UserSettingsApiKey[];
+  notifications: UserSettingsNotification[];
+};
+
+type UserSettingsProfileUpdatePayload = {
+  username: string;
+  email: string;
+};
+
+type UserSettingsApiKeyCreatePayload = {
+  environment: UserSettingsApiKey["environment"];
+};
+
+type UserSettingsApiKeyCreateResponse = {
+  key: UserSettingsApiKey;
+  fullKey: string;
+};
+
+type UserSettingsNotificationUpdatePayload = {
+  enabled: boolean;
+};
+
 const MOCK_SESSIONS_STORAGE_KEY = "agenticbay.mock.marketplace.sessions";
+const MOCK_OWNER_ONBOARDING_DRAFT_KEY = "agenticbay.mock.owner.onboarding.draft";
+const MOCK_USER_SETTINGS_STORAGE_KEY = "agenticbay.mock.user.settings";
+
+type OwnerOnboardingAction = {
+  id: string;
+  name: string;
+  priceUsdc: string;
+};
+
+type OwnerOnboardingPayload = {
+  agentName: string;
+  description: string;
+  category: string;
+  tags: string[];
+  repositoryUrl: string;
+  externalEndpointUrl: string;
+  actions: OwnerOnboardingAction[];
+};
 
 const ownerNames = [
   "Maya Chen",
@@ -256,6 +419,221 @@ function readMockSessions() {
     window.localStorage.removeItem(MOCK_SESSIONS_STORAGE_KEY);
     return seededMockSessions;
   }
+}
+
+function readOwnerOnboardingDraft(): OwnerOnboardingPayload | null {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(MOCK_OWNER_ONBOARDING_DRAFT_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as OwnerOnboardingPayload;
+  } catch {
+    window.localStorage.removeItem(MOCK_OWNER_ONBOARDING_DRAFT_KEY);
+    return null;
+  }
+}
+
+function buildSeedUserSettings(): UserSettingsResponse {
+  return {
+    profile: {
+      username: "maya-buyer",
+      email: "maya@agenticbay.dev",
+      role: "agent_owner",
+      avatarInitials: "MB",
+      avatarColor: "bg-[var(--primary)]",
+    },
+    apiKeys: [
+      {
+        id: "key-live-primary",
+        environment: "Production",
+        prefix: "agb_live_7Hk2",
+        createdAt: hoursAgoIso(24 * 18),
+        lastUsedAt: hoursAgoIso(3),
+      },
+      {
+        id: "key-dev-sandbox",
+        environment: "Development",
+        prefix: "agb_test_Qm91",
+        createdAt: hoursAgoIso(24 * 41),
+        lastUsedAt: hoursAgoIso(28),
+      },
+    ],
+    notifications: [
+      {
+        id: "job_updates",
+        label: "Job updates",
+        description: "Status changes, completed runs, failures, and refund events.",
+        enabled: true,
+      },
+      {
+        id: "wallet_activity",
+        label: "Wallet activity",
+        description: "Deposits, withdrawals, escrow locks, and Circle sync alerts.",
+        enabled: true,
+      },
+      {
+        id: "agent_reviews",
+        label: "Agent reviews",
+        description: "New buyer reviews and quality signals for owned agents.",
+        enabled: true,
+      },
+      {
+        id: "product_digest",
+        label: "Product digest",
+        description: "Occasional marketplace recommendations and feature notes.",
+        enabled: false,
+      },
+    ],
+  };
+}
+
+function readUserSettings(): UserSettingsResponse {
+  const seed = buildSeedUserSettings();
+
+  if (!isBrowser()) {
+    return seed;
+  }
+
+  const raw = window.localStorage.getItem(MOCK_USER_SETTINGS_STORAGE_KEY);
+  if (!raw) {
+    return seed;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as UserSettingsResponse;
+    return {
+      profile: { ...seed.profile, ...parsed.profile },
+      apiKeys: parsed.apiKeys ?? seed.apiKeys,
+      notifications: seed.notifications.map((notification) => {
+        const saved = parsed.notifications?.find((item) => item.id === notification.id);
+        return saved ? { ...notification, enabled: saved.enabled } : notification;
+      }),
+    };
+  } catch {
+    window.localStorage.removeItem(MOCK_USER_SETTINGS_STORAGE_KEY);
+    return seed;
+  }
+}
+
+function writeUserSettings(settings: UserSettingsResponse) {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.localStorage.setItem(MOCK_USER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+}
+
+function updateUserSettingsProfile(payload: UserSettingsProfileUpdatePayload): UserSettingsProfile {
+  const username = payload.username.trim();
+  const email = payload.email.trim().toLowerCase();
+  const takenUsernames = ["admin", "agenticbay", "support", "northstar"];
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Enter a valid email address.");
+  }
+
+  if (!/^[a-z0-9][a-z0-9-]{2,29}$/i.test(username)) {
+    throw new Error("Username must be 3-30 characters using letters, numbers, or hyphens.");
+  }
+
+  if (takenUsernames.includes(username.toLowerCase())) {
+    throw new Error("That username is already taken.");
+  }
+
+  const settings = readUserSettings();
+  const nextProfile = {
+    ...settings.profile,
+    username,
+    email,
+    avatarInitials: username
+      .split("-")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase(),
+  };
+
+  writeUserSettings({
+    ...settings,
+    profile: nextProfile,
+  });
+
+  return nextProfile;
+}
+
+function createUserSettingsApiKey(
+  payload: UserSettingsApiKeyCreatePayload
+): UserSettingsApiKeyCreateResponse {
+  const settings = readUserSettings();
+  const isProduction = payload.environment === "Production";
+  const random =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().replace(/-/g, "")
+      : `${Date.now()}${Math.random().toString(36).slice(2)}`;
+  const prefix = `${isProduction ? "agb_live" : "agb_test"}_${random.slice(0, 4)}`;
+  const key: UserSettingsApiKey = {
+    id: `key-${random.slice(0, 12)}`,
+    environment: payload.environment,
+    prefix,
+    createdAt: new Date().toISOString(),
+    lastUsedAt: null,
+  };
+
+  writeUserSettings({
+    ...settings,
+    apiKeys: [key, ...settings.apiKeys],
+  });
+
+  return {
+    key,
+    fullKey: `${prefix}_${random.slice(4)}${random}`,
+  };
+}
+
+function revokeUserSettingsApiKey(keyId: string) {
+  const settings = readUserSettings();
+  const apiKeys = settings.apiKeys.filter((key) => key.id !== keyId);
+
+  writeUserSettings({
+    ...settings,
+    apiKeys,
+  });
+
+  return {
+    revoked: settings.apiKeys.length !== apiKeys.length,
+  };
+}
+
+function updateUserSettingsNotification(
+  notificationId: string,
+  payload: UserSettingsNotificationUpdatePayload
+) {
+  const settings = readUserSettings();
+  const notifications = settings.notifications.map((notification) =>
+    notification.id === notificationId
+      ? { ...notification, enabled: payload.enabled }
+      : notification
+  );
+
+  writeUserSettings({
+    ...settings,
+    notifications,
+  });
+
+  return notifications.find((notification) => notification.id === notificationId) ?? null;
+}
+
+function writeOwnerOnboardingDraft(payload: OwnerOnboardingPayload) {
+  if (!isBrowser()) {
+    return;
+  }
+  window.localStorage.setItem(MOCK_OWNER_ONBOARDING_DRAFT_KEY, JSON.stringify(payload));
 }
 
 function writeMockSessions(sessions: Record<string, MockMarketplaceSessionRecord>) {
@@ -517,13 +895,13 @@ function formatDurationLabel(minutes: number) {
   return days === 1 ? "1 day" : `${days} days`;
 }
 
-function buildResponseTimeDistribution(agentSlug: string) {
+function buildResponseTimeDistribution(agentSlug: string, totalJobsOverride?: number) {
   const agent = getMarketplaceAgentDetail(agentSlug);
   if (!agent) {
     throw new Error(`Mock response distribution could not find agent '${agentSlug}'.`);
   }
 
-  const jobs = Math.max(agent.jobsCompleted, 1);
+  const jobs = Math.max(totalJobsOverride ?? agent.jobsCompleted, 1);
   const patterns: Record<number, number[]> = {
     1: [0.46, 0.28, 0.14, 0.08, 0.04],
     2: [0.28, 0.32, 0.2, 0.12, 0.08],
@@ -712,6 +1090,122 @@ function buildRevenueSeries(
   });
 }
 
+function tokenizeSearchQuery(query: string) {
+  const aliases: Record<string, string[]> = {
+    scrape: ["research", "data", "development", "automation"],
+    scraping: ["research", "data", "development", "automation"],
+    website: ["content", "development", "research"],
+    web: ["content", "development", "research"],
+    dashboard: ["data", "analytics", "reporting"],
+    automate: ["automation", "workflow", "ops"],
+    support: ["support", "inbox", "customer"],
+    design: ["design", "creative", "component"],
+    audit: ["security", "review", "compliance"],
+    code: ["development", "testing", "bugfix"],
+  };
+
+  return query
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .flatMap((token) => [token, ...(aliases[token] ?? [])]);
+}
+
+function scoreSearchAgent(agentSlug: string, query: string) {
+  const detail = getMarketplaceAgentDetail(agentSlug);
+  if (!detail) {
+    return null;
+  }
+
+  const tokens = tokenizeSearchQuery(query);
+  const haystack = [
+    detail.name,
+    detail.description,
+    detail.headline,
+    detail.tags.join(" "),
+    detail.categories.join(" "),
+    detail.actions.map((action) => `${action.name} ${action.description}`).join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const hits = tokens.filter((token) => haystack.includes(token));
+  const uniqueHits = new Set(hits);
+  const lexicalScore = uniqueHits.size / Math.max(new Set(tokens).size, 1);
+  const qualityScore = detail.rating / 5;
+  const completionScore = Math.min(detail.jobsCompleted / 420, 1);
+  const speedScore = (6 - detail.speedRank) / 5;
+  const rawScore = lexicalScore * 62 + qualityScore * 16 + completionScore * 12 + speedScore * 10;
+  const matchPercentage = Math.min(99, Math.max(0, Math.round(rawScore)));
+
+  return {
+    detail,
+    matchPercentage,
+    hitCount: uniqueHits.size,
+  };
+}
+
+function buildMarketplaceSearchResult(
+  agentSlug: string,
+  query: string
+): MarketplaceSearchResult | null {
+  const scored = scoreSearchAgent(agentSlug, query);
+  if (!scored || scored.matchPercentage < 28) {
+    return null;
+  }
+
+  const { detail, matchPercentage } = scored;
+  const primaryAction = detail.actions[0];
+
+  return {
+    agentSlug: detail.slug,
+    agentName: detail.name,
+    description: detail.description,
+    rating: detail.rating,
+    jobsCompleted: detail.jobsCompleted,
+    startingPriceUsdc: detail.startingPriceUsdc,
+    matchPercentage,
+    reason: `${detail.name} matches this request through ${detail.tags.slice(0, 2).join(" and ").toLowerCase()} with ${detail.speedLabel.toLowerCase()} delivery.`,
+    primaryAction: {
+      actionId: primaryAction.id,
+      actionName: primaryAction.name,
+      priceUsdc: primaryAction.priceUsdc,
+      estimatedDurationLabel: primaryAction.estimatedDurationLabel,
+      inputSummary: `${detail.name} will execute ${primaryAction.name} for: ${query}`,
+      mode: "hire",
+    },
+    avatar: detail.avatar,
+  };
+}
+
+function buildMockMarketplaceSearch(query: string): MarketplaceSearchResponse {
+  const normalizedQuery = query.trim();
+  const results = marketplaceAgents
+    .map((agent) => buildMarketplaceSearchResult(agent.slug, normalizedQuery))
+    .filter((result): result is MarketplaceSearchResult => Boolean(result))
+    .sort(
+      (left, right) =>
+        right.matchPercentage - left.matchPercentage ||
+        right.rating - left.rating ||
+        right.jobsCompleted - left.jobsCompleted
+    )
+    .slice(0, 12);
+
+  const bestMatch = results[0] ?? null;
+  const orchestratorSuggestion = bestMatch
+    ? `I would start with ${bestMatch.agentName}. It is the strongest match for "${normalizedQuery}" at ${bestMatch.matchPercentage}% because its capabilities overlap the request and it has ${bestMatch.jobsCompleted.toLocaleString("en-US")} completed jobs with a ${bestMatch.rating.toFixed(1)} rating.`
+    : `I could not find a strong specialist match for "${normalizedQuery}". Try a more specific service request, such as "research competitors", "automate CRM routing", or "audit smart contract".`;
+
+  return {
+    query: normalizedQuery,
+    generatedAt: new Date().toISOString(),
+    resultCount: results.length,
+    orchestratorSuggestion,
+    bestMatch,
+    results,
+  };
+}
+
 function buildMockAgentAnalytics(agentSlug: string, range: AnalyticsRange): AgentAnalyticsResponse {
   const agent = getMarketplaceAgentDetail(agentSlug);
   if (!agent) {
@@ -733,10 +1227,16 @@ function buildMockAgentAnalytics(agentSlug: string, range: AnalyticsRange): Agen
     Math.max(1, totalJobs - index * Math.ceil(totalJobs / 4))
   );
   const countSum = counts.reduce((total, count) => total + count, 0);
+  let runningPercentage = 0;
 
   const actionBreakdown = agent.actions.map((action, index) => {
     const count = counts[index];
-    const percentage = round((count / countSum) * 100);
+    const percentage =
+      index === agent.actions.length - 1
+        ? round(100 - runningPercentage)
+        : round((count / countSum) * 100);
+    runningPercentage += index === agent.actions.length - 1 ? 0 : percentage;
+
     return {
       action: action.name,
       count,
@@ -760,7 +1260,7 @@ function buildMockAgentAnalytics(agentSlug: string, range: AnalyticsRange): Agen
     revenueSeries: buildRevenueSeries(agent.slug, range, totalEarned, totalJobs),
     actionBreakdown,
     reviews,
-    responseTimeDistribution: buildResponseTimeDistribution(agent.slug),
+    responseTimeDistribution: buildResponseTimeDistribution(agent.slug, totalJobs),
   };
 }
 
@@ -836,6 +1336,71 @@ function buildMockBuyerDashboardSummary(limit = 10): BuyerDashboardSummaryRespon
   };
 }
 
+function toBuyerJobHistoryStatus(status: MarketplaceSessionStatus): {
+  status: BuyerJobHistoryStatus;
+  statusLabel: "Active" | "Completed" | "Failed";
+  refundStatus: "not_applicable" | "refunded" | "pending_refund";
+} {
+  if (status === "completed") {
+    return {
+      status: "completed",
+      statusLabel: "Completed",
+      refundStatus: "not_applicable",
+    };
+  }
+
+  if (status === "cancelled" || status === "closed") {
+    return {
+      status: "failed",
+      statusLabel: "Failed",
+      refundStatus: status === "cancelled" ? "refunded" : "pending_refund",
+    };
+  }
+
+  return {
+    status: "active",
+    statusLabel: "Active",
+    refundStatus: "not_applicable",
+  };
+}
+
+function buildMockBuyerJobHistory(): BuyerJobHistoryResponse {
+  const jobs = Object.values(readMockSessions())
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .map((session) => {
+      const status = toBuyerJobHistoryStatus(session.status);
+
+      return {
+        sessionId: session.sessionId,
+        agentSlug: session.agentSlug,
+        agentName: session.agentName,
+        actionId: session.actionId,
+        actionName: session.actionName,
+        inputSummary: session.inputSummary,
+        ...status,
+        amountChargedUsdc: session.priceUsdc,
+        amountLockedUsdc: session.amountLockedUsdc,
+        durationLabel: session.estimatedDurationLabel,
+        createdAt: session.createdAt,
+        redirectPath: session.redirectPath,
+        mode: session.mode,
+        rehirePayload: {
+          actionId: session.actionId,
+          actionName: session.actionName,
+          priceUsdc: session.priceUsdc,
+          estimatedDurationLabel: session.estimatedDurationLabel,
+          inputSummary: session.inputSummary,
+          mode: session.mode,
+        },
+      };
+    });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    jobs,
+  };
+}
+
 function buildMockCircleWalletBalance(): CircleWalletBalanceResponse {
   const sessions = Object.values(readMockSessions());
   const pendingBalanceUsdc = sessions
@@ -859,6 +1424,194 @@ function buildMockCircleWalletBalance(): CircleWalletBalanceResponse {
     lockedInEscrowUsdc,
     lastUpdatedAt: new Date().toISOString(),
     syncStatus: "live",
+  };
+}
+
+function paginateWalletItems<T>(items: T[], page: number, pageSize: number) {
+  const totalItems = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(Math.max(page, 1), totalPages);
+
+  return {
+    page: currentPage,
+    pageSize,
+    totalItems,
+    totalPages,
+    items: items.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+  };
+}
+
+function hoursAgoIso(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+function buildMockWalletTransactions(): WalletTransactionRecord[] {
+  const sessionTransactions = Object.values(readMockSessions()).flatMap((session) => {
+    if (session.mode === "demo" || session.priceUsdc <= 0) {
+      return [];
+    }
+
+    const locked =
+      session.status === "processing" ||
+      session.status === "completed" ||
+      session.status === "cancelled";
+    const completed = session.status === "completed";
+    const cancelled = session.status === "cancelled";
+
+    return [
+      ...(locked
+        ? [
+            {
+              id: `${session.sessionId}-lock`,
+              direction: "outbound" as const,
+              type: "escrow_lock" as const,
+              label: `Escrow locked for ${session.actionName}`,
+              amountUsdc: session.priceUsdc,
+              timestamp: session.createdAt,
+              status: "locked" as const,
+              jobId: session.sessionId,
+              jobTitle: session.actionName,
+              agentName: session.agentName,
+            },
+          ]
+        : []),
+      ...(completed
+        ? [
+            {
+              id: `${session.sessionId}-release`,
+              direction: "outbound" as const,
+              type: "escrow_release" as const,
+              label: `Escrow released to ${session.agentName}`,
+              amountUsdc: session.priceUsdc,
+              timestamp: hoursAgoIso(
+                Math.max(
+                  1,
+                  Math.floor((Date.now() - new Date(session.createdAt).getTime()) / 36e5) - 1
+                )
+              ),
+              status: "completed" as const,
+              jobId: session.sessionId,
+              jobTitle: session.actionName,
+              agentName: session.agentName,
+            },
+          ]
+        : []),
+      ...(cancelled
+        ? [
+            {
+              id: `${session.sessionId}-refund`,
+              direction: "inbound" as const,
+              type: "refund" as const,
+              label: `Escrow refund from ${session.agentName}`,
+              amountUsdc: session.priceUsdc,
+              timestamp: hoursAgoIso(
+                Math.max(
+                  1,
+                  Math.floor((Date.now() - new Date(session.createdAt).getTime()) / 36e5) - 2
+                )
+              ),
+              status: "completed" as const,
+              jobId: session.sessionId,
+              jobTitle: session.actionName,
+              agentName: session.agentName,
+            },
+          ]
+        : []),
+    ];
+  });
+
+  const manualTransactions: WalletTransactionRecord[] = [
+    {
+      id: "wallet-deposit-seed-01",
+      direction: "inbound",
+      type: "deposit",
+      label: "Circle USDC deposit",
+      amountUsdc: 8500,
+      timestamp: hoursAgoIso(2),
+      status: "completed",
+      counterparty: "Circle wallet rail",
+    },
+    {
+      id: "wallet-withdraw-seed-01",
+      direction: "outbound",
+      type: "withdrawal",
+      label: "Withdrawal to external wallet",
+      amountUsdc: 1250,
+      timestamp: hoursAgoIso(18),
+      status: "completed",
+      counterparty: "0x71C4...A901",
+    },
+    {
+      id: "wallet-deposit-seed-02",
+      direction: "inbound",
+      type: "deposit",
+      label: "Circle USDC deposit",
+      amountUsdc: 4200,
+      timestamp: hoursAgoIso(76),
+      status: "completed",
+      counterparty: "Circle wallet rail",
+    },
+  ];
+
+  return [...manualTransactions, ...sessionTransactions].sort(
+    (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime()
+  );
+}
+
+function buildMockWalletEscrow(): WalletEscrowRecord[] {
+  return Object.values(readMockSessions())
+    .filter(
+      (session) =>
+        session.mode === "hire" &&
+        (session.status === "processing" || session.status === "awaiting_payment") &&
+        Math.max(session.amountLockedUsdc, session.priceUsdc) > 0
+    )
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .map((session) => ({
+      id: `${session.sessionId}-escrow`,
+      jobId: session.sessionId,
+      jobTitle: session.actionName,
+      agentName: session.agentName,
+      amountLockedUsdc: Math.max(session.amountLockedUsdc, session.priceUsdc),
+      status: session.status === "awaiting_payment" ? "awaiting_payment" : "processing",
+      lockedAt: session.createdAt,
+    }));
+}
+
+function buildMockWalletEarnings(): WalletEarningRecord[] {
+  return Object.values(readMockSessions())
+    .filter((session) => session.mode === "hire" && session.status === "completed")
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .map((session, index) => ({
+      id: `${session.sessionId}-earning`,
+      agentSlug: session.agentSlug,
+      agentName: session.agentName,
+      sourceJobId: session.sessionId,
+      sourceJobTitle: session.actionName,
+      amountUsdc: round(session.priceUsdc * 0.86, 2),
+      timestamp: hoursAgoIso(
+        Math.max(1, Math.floor((Date.now() - new Date(session.createdAt).getTime()) / 36e5) - 1)
+      ),
+      status: index % 4 === 0 ? "pending" : "paid",
+    }));
+}
+
+function buildMockWalletActivity(
+  tab: WalletActivityTab,
+  page: number,
+  pageSize: number
+): WalletActivityResponse {
+  const source: WalletActivityResponse["items"] =
+    tab === "escrow"
+      ? buildMockWalletEscrow()
+      : tab === "earnings"
+        ? buildMockWalletEarnings()
+        : buildMockWalletTransactions();
+  const paginated = paginateWalletItems(source, page, pageSize);
+
+  return {
+    tab,
+    ...paginated,
   };
 }
 
@@ -914,9 +1667,20 @@ export function supportsMockApi(path: string) {
   const pathname = parsePath(path).pathname;
 
   return (
+    pathname === "/owner/agents/onboarding/draft" ||
+    pathname === "/owner/agents/onboarding/check-endpoints" ||
+    pathname === "/owner/agents/onboarding/submit" ||
     pathname === "/circle/wallets/primary/balance" ||
+    pathname === "/circle/wallets/primary/activity" ||
     pathname === "/buyer/dashboard/summary" ||
+    pathname === "/buyer/jobs/history" ||
     pathname === "/buyer/recommended-agents" ||
+    pathname === "/user/settings" ||
+    pathname === "/user/settings/profile" ||
+    pathname === "/user/settings/api-keys" ||
+    /^\/user\/settings\/api-keys\/[^/]+$/.test(pathname) ||
+    /^\/user\/settings\/notifications\/[^/]+$/.test(pathname) ||
+    pathname === "/marketplace/search" ||
     pathname === "/marketplace/stats" ||
     /^\/marketplace\/agents\/[^/]+\/insights$/.test(pathname) ||
     /^\/marketplace\/agents\/[^/]+\/sessions$/.test(pathname) ||
@@ -930,8 +1694,82 @@ export async function mockApiFetch<T>(path: string, config?: AxiosRequestConfig)
   const pathname = url.pathname;
   const method = (config?.method ?? "get").toLowerCase();
 
+  if (pathname === "/owner/agents/onboarding/draft") {
+    if (method === "get") {
+      return {
+        draft: readOwnerOnboardingDraft(),
+      } as T;
+    }
+    if (method === "post" || method === "put" || method === "patch") {
+      const payload = config?.data as OwnerOnboardingPayload;
+      writeOwnerOnboardingDraft(payload);
+      return {
+        savedAt: new Date().toISOString(),
+      } as T;
+    }
+  }
+
+  if (pathname === "/owner/agents/onboarding/check-endpoints" && method === "post") {
+    const payload = config?.data as OwnerOnboardingPayload;
+    const endpoint = payload.externalEndpointUrl.trim();
+    const hasEndpoint = endpoint.length > 0;
+    const failingEndpoint = hasEndpoint && endpoint.includes("fail");
+    const invalidScheme = hasEndpoint && !/^https?:\/\//i.test(endpoint);
+
+    const results = [
+      {
+        path: "GET /capabilities",
+        ok: !invalidScheme && !failingEndpoint,
+        message: invalidScheme
+          ? "invalid endpoint URL"
+          : failingEndpoint
+            ? "request returned 500"
+            : "ok",
+      },
+      {
+        path: "POST /connect",
+        ok: !invalidScheme && !failingEndpoint,
+        message: invalidScheme
+          ? "invalid endpoint URL"
+          : failingEndpoint
+            ? "request timeout"
+            : "ok",
+      },
+      {
+        path: "WS /ws/service/{session_id}",
+        ok: !invalidScheme && !failingEndpoint,
+        message: invalidScheme
+          ? "invalid endpoint URL"
+          : failingEndpoint
+            ? "websocket handshake failed"
+            : "ok",
+      },
+    ];
+
+    return { results } as T;
+  }
+
+  if (pathname === "/owner/agents/onboarding/submit" && method === "post") {
+    const payload = config?.data as OwnerOnboardingPayload;
+    writeOwnerOnboardingDraft(payload);
+    return {
+      status: "pending_review",
+      notice:
+        "Submission received. Your listing is now pending manual source review and endpoint verification.",
+    } as T;
+  }
+
   if (pathname === "/circle/wallets/primary/balance" && method === "get") {
     return buildMockCircleWalletBalance() as T;
+  }
+
+  if (pathname === "/circle/wallets/primary/activity" && method === "get") {
+    const rawTab = url.searchParams.get("tab");
+    const tab: WalletActivityTab =
+      rawTab === "escrow" || rawTab === "earnings" ? rawTab : "transactions";
+    const page = parsePositiveInteger(url.searchParams.get("page"), 1);
+    const pageSize = parsePositiveInteger(url.searchParams.get("limit"), 8);
+    return buildMockWalletActivity(tab, page, pageSize) as T;
   }
 
   if (pathname === "/buyer/dashboard/summary" && method === "get") {
@@ -939,9 +1777,42 @@ export async function mockApiFetch<T>(path: string, config?: AxiosRequestConfig)
     return buildMockBuyerDashboardSummary(limit) as T;
   }
 
+  if (pathname === "/buyer/jobs/history" && method === "get") {
+    return buildMockBuyerJobHistory() as T;
+  }
+
   if (pathname === "/buyer/recommended-agents" && method === "get") {
     const limit = parsePositiveInteger(url.searchParams.get("limit"), 6);
     return buildMockBuyerRecommendedAgents(limit) as T;
+  }
+
+  if (pathname === "/user/settings" && method === "get") {
+    return readUserSettings() as T;
+  }
+
+  if (pathname === "/user/settings/profile" && method === "patch") {
+    return updateUserSettingsProfile(config?.data as UserSettingsProfileUpdatePayload) as T;
+  }
+
+  if (pathname === "/user/settings/api-keys" && method === "post") {
+    return createUserSettingsApiKey(config?.data as UserSettingsApiKeyCreatePayload) as T;
+  }
+
+  const revokeApiKeyMatch = pathname.match(/^\/user\/settings\/api-keys\/([^/]+)$/);
+  if (revokeApiKeyMatch && method === "delete") {
+    return revokeUserSettingsApiKey(decodeURIComponent(revokeApiKeyMatch[1])) as T;
+  }
+
+  const notificationMatch = pathname.match(/^\/user\/settings\/notifications\/([^/]+)$/);
+  if (notificationMatch && method === "patch") {
+    return updateUserSettingsNotification(
+      decodeURIComponent(notificationMatch[1]),
+      config?.data as UserSettingsNotificationUpdatePayload
+    ) as T;
+  }
+
+  if (pathname === "/marketplace/search" && method === "get") {
+    return buildMockMarketplaceSearch(url.searchParams.get("q") ?? "") as T;
   }
 
   if (pathname === "/marketplace/stats" && method === "get") {

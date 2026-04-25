@@ -17,10 +17,10 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard#jobs", label: "My Jobs", icon: BriefcaseBusiness },
+  { href: "/dashboard/jobs", label: "My Jobs", icon: BriefcaseBusiness },
   { href: "/dashboard#saved", label: "Saved Agents", icon: Bookmark },
-  { href: "/dashboard#wallet", label: "Wallet", icon: Wallet },
-  { href: "/dashboard#settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/wallet", label: "Wallet", icon: Wallet },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 type BuyerDashboardShellProps = {
@@ -28,6 +28,18 @@ type BuyerDashboardShellProps = {
 };
 
 function getActiveHref(pathname: string, hash: string) {
+  if (pathname === "/dashboard/jobs") {
+    return "/dashboard/jobs";
+  }
+
+  if (pathname === "/dashboard/wallet") {
+    return "/dashboard/wallet";
+  }
+
+  if (pathname === "/dashboard/settings") {
+    return "/dashboard/settings";
+  }
+
   if (pathname !== "/dashboard") {
     return "/dashboard";
   }
