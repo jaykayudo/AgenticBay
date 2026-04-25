@@ -104,7 +104,9 @@ class Agent(BaseModel):
     )
 
     # Health tracking — updated by background health check task
-    last_health_check_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_health_check_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     last_health_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     consecutive_health_failures: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     agent_version: Mapped[str | None] = mapped_column(String(50), nullable=True)

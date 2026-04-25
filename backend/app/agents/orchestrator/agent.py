@@ -73,6 +73,7 @@ class OrchestratorAgent:
         self.llm = OrchestratorLLM()
         self.http_timeout = aiohttp.ClientTimeout(total=30)
         from app.services.health_client import AgentHealthClient
+
         self._health_client = AgentHealthClient()
 
     # ──────────────────────────────────────────

@@ -14,8 +14,8 @@ from app.services.health_client import (
 
 logger = logging.getLogger(__name__)
 
-_HEALTH_CHECK_INTERVAL = 60   # seconds between full sweeps
-_CONCURRENCY_LIMIT = 20       # max simultaneous health checks
+_HEALTH_CHECK_INTERVAL = 60  # seconds between full sweeps
+_CONCURRENCY_LIMIT = 20  # max simultaneous health checks
 
 
 async def health_check_all_agents_task() -> None:
@@ -51,8 +51,6 @@ async def _check_and_persist(
     base_url: str,
     owner_id: uuid.UUID,
 ) -> None:
-    from app.models.agents import AgentStatus
-    from app.models.notifications import NotificationType
 
     client = AgentHealthClient()
     result = await client.check(base_url)
@@ -90,7 +88,9 @@ async def _check_and_persist(
 
     logger.warning(
         "Health FAIL: agent=%s failures=%d reason=%s",
-        agent_id, new_failures, result.reason,
+        agent_id,
+        new_failures,
+        result.reason,
     )
 
     # First failure — warn owner immediately

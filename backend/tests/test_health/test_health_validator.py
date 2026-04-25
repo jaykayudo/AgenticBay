@@ -2,21 +2,23 @@
 Tests for /health check validation during agent onboarding.
 Covers: healthy, degraded, unhealthy, timeout, connection refused, non-JSON, invalid status.
 """
+
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
-from app.services.health_client import AgentHealthClient, HealthCheckResult
 from app.services.agent_validator import AgentValidationError, AgentValidator
-
+from app.services.health_client import AgentHealthClient, HealthCheckResult
 
 # ── HealthCheckResult helpers ─────────────────────────────────────────────────
 
-def _mock_response(status_code: int = 200, body: dict | None = None, text: str | None = None) -> MagicMock:
+
+def _mock_response(
+    status_code: int = 200, body: dict | None = None, text: str | None = None
+) -> MagicMock:
     resp = MagicMock()
     resp.status_code = status_code
     if body is not None:
@@ -27,6 +29,7 @@ def _mock_response(status_code: int = 200, body: dict | None = None, text: str |
 
 
 # ── AgentHealthClient unit tests ──────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_health_client_ok_response() -> None:
@@ -58,7 +61,7 @@ async def test_health_client_degraded_response() -> None:
 
         result = await AgentHealthClient().check("http://agent.local")
 
-    assert result.healthy is True   # degraded is still "healthy" (known status)
+    assert result.healthy is True  # degraded is still "healthy" (known status)
     assert result.ready is True
     assert result.status == "degraded"
     assert result.reason == "LLM provider slow"
@@ -156,14 +159,19 @@ async def test_health_client_invalid_status_value() -> None:
 
 # ── AgentValidator integration tests ─────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_validator_fails_fast_on_unhealthy_agent() -> None:
     """Validator raises immediately if /health fails; /capabilities is never called."""
     validator = AgentValidator()
     unhealthy = HealthCheckResult(
-        healthy=False, ready=False, status="unreachable",
-        reason="Connection refused", agent_version=None,
-        active_sessions=None, response_time_ms=3000.0,
+        healthy=False,
+        ready=False,
+        status="unreachable",
+        reason="Connection refused",
+        agent_version=None,
+        active_sessions=None,
+        response_time_ms=3000.0,
     )
 
     with patch.object(validator._health_client, "check", return_value=unhealthy):
@@ -177,9 +185,13 @@ async def test_validator_fails_fast_on_unhealthy_agent() -> None:
 async def test_validator_fails_on_ready_false() -> None:
     validator = AgentValidator()
     not_ready = HealthCheckResult(
-        healthy=True, ready=False, status="ok",
-        reason=None, agent_version=None,
-        active_sessions=None, response_time_ms=50.0,
+        healthy=True,
+        ready=False,
+        status="ok",
+        reason=None,
+        agent_version=None,
+        active_sessions=None,
+        response_time_ms=50.0,
     )
 
     with patch.object(validator._health_client, "check", return_value=not_ready):
@@ -194,9 +206,13 @@ async def test_validator_includes_health_in_result() -> None:
     """Successful validation result contains the HealthCheckResult."""
     validator = AgentValidator()
     healthy = HealthCheckResult(
-        healthy=True, ready=True, status="ok",
-        reason=None, agent_version="2.0.0",
-        active_sessions=1, response_time_ms=42.0,
+        healthy=True,
+        ready=True,
+        status="ok",
+        reason=None,
+        agent_version="2.0.0",
+        active_sessions=1,
+        response_time_ms=42.0,
     )
 
     cap_payload = {"message": "I can summarize documents."}

@@ -11,17 +11,17 @@ import httpx
 from app.core.redis import get_redis
 
 HEALTH_CHECK_TIMEOUT = 3.0  # seconds — per spec
-HEALTH_CACHE_TTL = 120       # seconds
+HEALTH_CACHE_TTL = 120  # seconds
 HEALTH_CACHE_PREFIX = "agent_health"
 MAX_CONSECUTIVE_FAILURES_BEFORE_SUSPEND = 5
 
 
 @dataclass
 class HealthCheckResult:
-    healthy: bool            # True if 200 + valid JSON + known status value
-    ready: bool              # True if body["ready"] is True
-    status: str              # "ok", "degraded", or "unreachable"
-    reason: str | None       # populated when degraded or unreachable
+    healthy: bool  # True if 200 + valid JSON + known status value
+    ready: bool  # True if body["ready"] is True
+    status: str  # "ok", "degraded", or "unreachable"
+    reason: str | None  # populated when degraded or unreachable
     agent_version: str | None
     active_sessions: int | None
     response_time_ms: float

@@ -60,7 +60,7 @@ class AgentValidator:
 
         if not result.ready:
             raise AgentValidationError(
-                'GET /health returned ready=false. '
+                "GET /health returned ready=false. "
                 "The agent must report ready=true before it can be onboarded."
             )
 

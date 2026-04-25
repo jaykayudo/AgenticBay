@@ -70,13 +70,12 @@ class VectorSearch:
     # ──────────────────────────────────────────
     # PRIVATE: Health filter
     # ──────────────────────────────────────────
-    async def _filter_healthy(
-        self, agents: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    async def _filter_healthy(self, agents: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Remove agents that are known-unhealthy from the Redis cache.
         For agents with no cache entry (race condition), perform a live check inline.
         """
+
         async def is_healthy(agent: dict[str, Any]) -> bool:
             agent_id = str(agent["id"])
             cached = await self._health_client.is_healthy_from_cache(agent_id)

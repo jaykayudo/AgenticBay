@@ -6,36 +6,46 @@ Tests for the background health check task:
   - Search filters out unhealthy agents from results
   - Pre-connect health check blocks connection to unhealthy agents
 """
+
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.services.health_client import AgentHealthClient, HealthCheckResult
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _healthy_result(**kw) -> HealthCheckResult:
     return HealthCheckResult(
-        healthy=True, ready=True, status="ok",
-        reason=None, agent_version="1.0.0",
-        active_sessions=0, response_time_ms=50.0, **kw,
+        healthy=True,
+        ready=True,
+        status="ok",
+        reason=None,
+        agent_version="1.0.0",
+        active_sessions=0,
+        response_time_ms=50.0,
+        **kw,
     )
 
 
 def _unhealthy_result(reason: str = "Connection refused") -> HealthCheckResult:
     return HealthCheckResult(
-        healthy=False, ready=False, status="unreachable",
-        reason=reason, agent_version=None,
-        active_sessions=None, response_time_ms=3000.0,
+        healthy=False,
+        ready=False,
+        status="unreachable",
+        reason=reason,
+        agent_version=None,
+        active_sessions=None,
+        response_time_ms=3000.0,
     )
 
 
 # ── Redis cache tests ─────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_set_cached_stores_correct_structure() -> None:
@@ -52,6 +62,7 @@ async def test_set_cached_stores_correct_structure() -> None:
     payload_str = call_args[0][1]
 
     import json
+
     payload = json.loads(payload_str)
 
     assert f"agent_health:{agent_id}" == key
@@ -87,6 +98,7 @@ async def test_is_healthy_from_cache_returns_none_on_miss() -> None:
 @pytest.mark.asyncio
 async def test_is_healthy_from_cache_returns_false_for_unhealthy() -> None:
     import json
+
     cached = json.dumps({"healthy": False, "ready": False, "status": "unreachable"})
     fake_redis = AsyncMock()
     fake_redis.get.return_value = cached
@@ -100,6 +112,7 @@ async def test_is_healthy_from_cache_returns_false_for_unhealthy() -> None:
 @pytest.mark.asyncio
 async def test_is_healthy_from_cache_returns_true_for_healthy() -> None:
     import json
+
     cached = json.dumps({"healthy": True, "ready": True, "status": "ok"})
     fake_redis = AsyncMock()
     fake_redis.get.return_value = cached
@@ -111,6 +124,7 @@ async def test_is_healthy_from_cache_returns_true_for_healthy() -> None:
 
 
 # ── Consecutive failure counting ─────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_check_and_persist_increments_failures_on_unhealthy() -> None:
@@ -191,6 +205,7 @@ async def test_check_and_persist_resets_failures_on_healthy() -> None:
 
 # ── Auto-suspension test ──────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_auto_suspend_triggers_after_five_failures() -> None:
     from app.tasks.agent_health_tasks import _check_and_persist
@@ -213,7 +228,7 @@ async def test_auto_suspend_triggers_after_five_failures() -> None:
         patch("app.tasks.agent_health_tasks.AsyncSessionLocal") as mock_session_cls,
         patch("app.tasks.agent_health_tasks.AgentRepository", return_value=mock_repo),
         patch("app.tasks.agent_health_tasks._suspend_agent") as mock_suspend,
-        patch("app.tasks.agent_health_tasks._notify_owner") as mock_notify,
+        patch("app.tasks.agent_health_tasks._notify_owner") as _,
     ):
         mock_client = AsyncMock()
         mock_client.check = AsyncMock(return_value=_unhealthy_result())
@@ -224,7 +239,6 @@ async def test_auto_suspend_triggers_after_five_failures() -> None:
         mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
         mock_suspend = AsyncMock()
-        mock_notify = AsyncMock()
 
         with patch("app.tasks.agent_health_tasks._suspend_agent", mock_suspend):
             await _check_and_persist(agent_id, "http://agent.local", owner_id)
@@ -235,6 +249,7 @@ async def test_auto_suspend_triggers_after_five_failures() -> None:
 
 
 # ── Search health filter tests ────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_vector_search_filters_unhealthy_agents() -> None:
@@ -294,11 +309,17 @@ async def test_vector_search_excludes_live_checked_unhealthy() -> None:
 
 # ── Pre-connect health check ──────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_pre_connect_blocks_unhealthy_agent() -> None:
     """OrchestratorAgent._handle_connect sends error if health check fails."""
     from app.agents.orchestrator.agent import OrchestratorAgent
-    from app.agents.orchestrator.schema import ConnectAgentRequest, ConnectAgentRequestData, JobSessionState, SessionPhase
+    from app.agents.orchestrator.schema import (
+        ConnectAgentRequest,
+        ConnectAgentRequestData,
+        JobSessionState,
+        SessionPhase,
+    )
 
     orchestrator = OrchestratorAgent()
 
@@ -336,6 +357,7 @@ async def test_pre_connect_blocks_unhealthy_agent() -> None:
         await orchestrator._handle_connect(state, message, fake_send)
 
     import json
+
     assert len(sent) == 1
     response = json.loads(sent[0])
     assert response["type"] == "ERROR"
