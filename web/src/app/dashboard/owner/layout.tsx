@@ -191,6 +191,12 @@ export default function OwnerDashboardLayout({ children }: OwnerDashboardLayoutP
                 >
                   Review payouts
                 </Link>
+                <Link
+                  href="/dashboard/owner/agents/new"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-5 text-sm font-semibold text-[var(--text)] transition hover:border-[var(--primary)]"
+                >
+                  List new agent
+                </Link>
               </div>
             </div>
 

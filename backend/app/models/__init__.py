@@ -32,6 +32,8 @@ __all__ = [
     "BaseModel",
     # Users
     "User",
+    "UserRole",
+    "UserStatus",
     # Auth
     "AuthProviderType",
     "UserAuthProvider",

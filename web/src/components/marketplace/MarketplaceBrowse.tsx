@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Command,
@@ -375,6 +376,7 @@ export function MarketplaceBrowse() {
 
   const urlSearch = searchParams.get("q") ?? "";
   const [searchDraft, setSearchDraft] = useState(urlSearch);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -502,6 +504,179 @@ export function MarketplaceBrowse() {
       : []),
   ];
 
+  function clearAllFilters() {
+    setSearchDraft("");
+    setMobileFiltersOpen(false);
+    updateQuery(
+      {
+        q: undefined,
+        category: undefined,
+        minPrice: undefined,
+        maxPrice: undefined,
+        rating: undefined,
+        speed: undefined,
+      },
+      true
+    );
+  }
+
+  function renderFiltersContent() {
+    return (
+      <div className="mt-6 space-y-6">
+        <section>
+          <h3 className="text-sm font-semibold text-[var(--text)]">Categories</h3>
+          <div className="mt-3 space-y-2.5">
+            {marketplaceCategories.map((category) => {
+              const checked = selectedCategories.includes(category.slug);
+
+              return (
+                <label
+                  key={category.slug}
+                  className="flex cursor-pointer items-start gap-3 rounded-2xl border border-transparent px-3 py-2 transition hover:border-[var(--border)] hover:bg-[var(--surface-2)]"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded accent-[var(--primary)]"
+                    checked={checked}
+                    onChange={() => {
+                      const nextCategories = checked
+                        ? selectedCategories.filter((value) => value !== category.slug)
+                        : [...selectedCategories, category.slug];
+
+                      updateQuery({ category: nextCategories }, true);
+                    }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text)]">{category.label}</p>
+                    <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+                      {category.description}
+                    </p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-[var(--text)]">Price range</h3>
+            <span className="text-sm text-[var(--text-muted)]">
+              {formatUsdc(minPrice)} - {formatUsdc(maxPrice)}
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            <div>
+              <div className="mb-2 flex items-center justify-between text-xs font-medium tracking-[0.14em] text-[var(--text-muted)] uppercase">
+                <span>Minimum</span>
+                <span>{formatUsdc(minPrice)}</span>
+              </div>
+              <input
+                type="range"
+                min={PRICE_MIN}
+                max={PRICE_MAX}
+                step={PRICE_STEP}
+                value={minPrice}
+                onChange={(event) => {
+                  const nextMin = Math.min(Number(event.target.value), maxPrice);
+                  updateQuery(
+                    {
+                      minPrice: nextMin > PRICE_MIN ? nextMin : undefined,
+                    },
+                    true
+                  );
+                }}
+                className="w-full accent-[var(--primary)]"
+              />
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between text-xs font-medium tracking-[0.14em] text-[var(--text-muted)] uppercase">
+                <span>Maximum</span>
+                <span>{formatUsdc(maxPrice)}</span>
+              </div>
+              <input
+                type="range"
+                min={PRICE_MIN}
+                max={PRICE_MAX}
+                step={PRICE_STEP}
+                value={maxPrice}
+                onChange={(event) => {
+                  const nextMax = Math.max(Number(event.target.value), minPrice);
+                  updateQuery(
+                    {
+                      maxPrice: nextMax < PRICE_MAX ? nextMax : undefined,
+                    },
+                    true
+                  );
+                }}
+                className="w-full accent-[var(--primary)]"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-semibold text-[var(--text)]">Minimum rating</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {ratingOptions.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() =>
+                  updateQuery(
+                    {
+                      rating: option.value > 0 ? option.value : undefined,
+                    },
+                    true
+                  )
+                }
+                className={cn(
+                  "rounded-full border px-3 py-2 text-sm font-medium transition",
+                  minRating === option.value
+                    ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]"
+                    : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-semibold text-[var(--text)]">Estimated speed</h3>
+          <div className="mt-3 space-y-2">
+            {marketplaceSpeedOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() =>
+                  updateQuery(
+                    {
+                      speed: option.value !== "any" ? option.value : undefined,
+                    },
+                    true
+                  )
+                }
+                className={cn(
+                  "flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition",
+                  speedValue === option.value
+                    ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]"
+                    : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+                )}
+              >
+                <span>{option.label}</span>
+                {speedValue === option.value ? <span>Selected</span> : null}
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg-elevated)_92%,transparent)] backdrop-blur">
@@ -579,7 +754,7 @@ export function MarketplaceBrowse() {
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <aside className="hidden space-y-4 xl:sticky xl:top-24 xl:block xl:self-start">
             <section className="app-panel p-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -590,179 +765,13 @@ export function MarketplaceBrowse() {
                 <button
                   type="button"
                   className="text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
-                  onClick={() => {
-                    setSearchDraft("");
-                    updateQuery(
-                      {
-                        q: undefined,
-                        category: undefined,
-                        minPrice: undefined,
-                        maxPrice: undefined,
-                        rating: undefined,
-                        speed: undefined,
-                      },
-                      true
-                    );
-                  }}
+                  onClick={clearAllFilters}
                 >
                   Clear all
                 </button>
               </div>
 
-              <div className="mt-6 space-y-6">
-                <section>
-                  <h3 className="text-sm font-semibold text-[var(--text)]">Categories</h3>
-                  <div className="mt-3 space-y-2.5">
-                    {marketplaceCategories.map((category) => {
-                      const checked = selectedCategories.includes(category.slug);
-
-                      return (
-                        <label
-                          key={category.slug}
-                          className="flex cursor-pointer items-start gap-3 rounded-2xl border border-transparent px-3 py-2 transition hover:border-[var(--border)] hover:bg-[var(--surface-2)]"
-                        >
-                          <input
-                            type="checkbox"
-                            className="mt-1 h-4 w-4 rounded accent-[var(--primary)]"
-                            checked={checked}
-                            onChange={() => {
-                              const nextCategories = checked
-                                ? selectedCategories.filter((value) => value !== category.slug)
-                                : [...selectedCategories, category.slug];
-
-                              updateQuery({ category: nextCategories }, true);
-                            }}
-                          />
-                          <div>
-                            <p className="text-sm font-medium text-[var(--text)]">
-                              {category.label}
-                            </p>
-                            <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-                              {category.description}
-                            </p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </section>
-
-                <section>
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold text-[var(--text)]">Price range</h3>
-                    <span className="text-sm text-[var(--text-muted)]">
-                      {formatUsdc(minPrice)} - {formatUsdc(maxPrice)}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-xs font-medium tracking-[0.14em] text-[var(--text-muted)] uppercase">
-                        <span>Minimum</span>
-                        <span>{formatUsdc(minPrice)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={PRICE_MIN}
-                        max={PRICE_MAX}
-                        step={PRICE_STEP}
-                        value={minPrice}
-                        onChange={(event) => {
-                          const nextMin = Math.min(Number(event.target.value), maxPrice);
-                          updateQuery(
-                            {
-                              minPrice: nextMin > PRICE_MIN ? nextMin : undefined,
-                            },
-                            true
-                          );
-                        }}
-                        className="w-full accent-[var(--primary)]"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-xs font-medium tracking-[0.14em] text-[var(--text-muted)] uppercase">
-                        <span>Maximum</span>
-                        <span>{formatUsdc(maxPrice)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={PRICE_MIN}
-                        max={PRICE_MAX}
-                        step={PRICE_STEP}
-                        value={maxPrice}
-                        onChange={(event) => {
-                          const nextMax = Math.max(Number(event.target.value), minPrice);
-                          updateQuery(
-                            {
-                              maxPrice: nextMax < PRICE_MAX ? nextMax : undefined,
-                            },
-                            true
-                          );
-                        }}
-                        className="w-full accent-[var(--primary)]"
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-[var(--text)]">Minimum rating</h3>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {ratingOptions.map((option) => (
-                      <button
-                        key={option.label}
-                        type="button"
-                        onClick={() =>
-                          updateQuery(
-                            {
-                              rating: option.value > 0 ? option.value : undefined,
-                            },
-                            true
-                          )
-                        }
-                        className={cn(
-                          "rounded-full border px-3 py-2 text-sm font-medium transition",
-                          minRating === option.value
-                            ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]"
-                            : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-[var(--text)]">Estimated speed</h3>
-                  <div className="mt-3 space-y-2">
-                    {marketplaceSpeedOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() =>
-                          updateQuery(
-                            {
-                              speed: option.value !== "any" ? option.value : undefined,
-                            },
-                            true
-                          )
-                        }
-                        className={cn(
-                          "flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition",
-                          speedValue === option.value
-                            ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]"
-                            : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                        )}
-                      >
-                        <span>{option.label}</span>
-                        {speedValue === option.value ? <span>Selected</span> : null}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </div>
+              {renderFiltersContent()}
             </section>
 
             <section className="app-panel-soft p-4">
@@ -780,6 +789,67 @@ export function MarketplaceBrowse() {
           </aside>
 
           <main className="min-w-0 space-y-4">
+            <section className="app-panel p-5 xl:hidden">
+              <button
+                type="button"
+                aria-expanded={mobileFiltersOpen}
+                aria-controls="marketplace-mobile-filters"
+                onClick={() => setMobileFiltersOpen((open) => !open)}
+                className="flex w-full items-center justify-between gap-4 text-left"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--primary-soft)] text-[var(--primary)]">
+                    <SlidersHorizontal className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--text)]">Marketplace filters</p>
+                    <p className="mt-1 text-sm text-[var(--text-muted)]">
+                      {activeFilterCount > 0
+                        ? `${activeFilterCount} active filters applied`
+                        : "Category, price, rating, and speed"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-3">
+                  {activeFilterCount > 0 ? (
+                    <span className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-sm text-[var(--text)]">
+                      {activeFilterCount}
+                    </span>
+                  ) : null}
+                  <ChevronDown
+                    className={cn("h-4 w-4 text-[var(--text-muted)] transition-transform", {
+                      "rotate-180": mobileFiltersOpen,
+                    })}
+                  />
+                </div>
+              </button>
+
+              {mobileFiltersOpen ? (
+                <div
+                  id="marketplace-mobile-filters"
+                  className="mt-5 border-t border-[var(--border)] pt-5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <SlidersHorizontal className="h-4 w-4 text-[var(--primary)]" />
+                      <h2 className="text-lg font-semibold text-[var(--text)]">Filters</h2>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text)]"
+                      onClick={clearAllFilters}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+
+                  {renderFiltersContent()}
+                </div>
+              ) : null}
+            </section>
+
             <section className="app-panel p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -883,21 +953,7 @@ export function MarketplaceBrowse() {
                   <button
                     type="button"
                     className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)] transition hover:opacity-90"
-                    onClick={() => {
-                      setSearchDraft("");
-                      updateQuery(
-                        {
-                          q: undefined,
-                          category: undefined,
-                          minPrice: undefined,
-                          maxPrice: undefined,
-                          rating: undefined,
-                          speed: undefined,
-                          page: undefined,
-                        },
-                        true
-                      );
-                    }}
+                    onClick={clearAllFilters}
                   >
                     Clear filters
                   </button>
