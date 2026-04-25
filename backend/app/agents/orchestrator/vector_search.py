@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -7,11 +8,13 @@ import voyageai
 from loguru import logger
 
 from app.core.database import asyncpg_connection
+from app.services.health_client import AgentHealthClient
 
 
 class VectorSearch:
     def __init__(self) -> None:
         self._vo: Any | None = None
+        self._health_client = AgentHealthClient()
 
     def _client(self) -> Any:
         if self._vo is None:
@@ -27,10 +30,13 @@ class VectorSearch:
         top_k: int = 10,
         filters: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
-        """Embed the query and return similar agents ranked by cosine similarity."""
+        """Embed the query, search pgvector, then filter out unhealthy agents."""
         try:
             embedding = await self._embed(query)
-            return await self._search_pgvector(embedding, top_k, filters)
+            # Fetch 2× top_k so we have headroom after filtering unhealthy agents
+            candidates = await self._search_pgvector(embedding, top_k * 2, filters)
+            healthy = await self._filter_healthy(candidates)
+            return healthy[:top_k]
         except Exception as e:
             logger.error(f"Vector search failed: {e}")
             return []
@@ -60,6 +66,32 @@ class VectorSearch:
         except Exception as e:
             logger.error(f"Failed to index agent {agent['id']}: {e}")
             return None
+
+    # ──────────────────────────────────────────
+    # PRIVATE: Health filter
+    # ──────────────────────────────────────────
+    async def _filter_healthy(
+        self, agents: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """
+        Remove agents that are known-unhealthy from the Redis cache.
+        For agents with no cache entry (race condition), perform a live check inline.
+        """
+        async def is_healthy(agent: dict[str, Any]) -> bool:
+            agent_id = str(agent["id"])
+            cached = await self._health_client.is_healthy_from_cache(agent_id)
+            if cached is not None:
+                return cached
+            # No cache entry — do a live check and cache the result
+            try:
+                result = await self._health_client.check(agent.get("base_url", ""))
+                await self._health_client.set_cached(agent_id, result, 0)
+                return result.healthy and result.ready
+            except Exception:
+                return True  # on live-check error, include the agent (fail open)
+
+        results = await asyncio.gather(*[is_healthy(a) for a in agents])
+        return [a for a, ok in zip(agents, results) if ok]
 
     # ──────────────────────────────────────────
     # PUBLIC: Remove agent from index

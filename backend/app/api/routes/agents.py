@@ -109,6 +109,11 @@ class AgentRead(APIModel):
     total_earned: Decimal = Field(alias="totalEarned")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
+    # Health tracking
+    last_health_check_at: datetime | None = Field(default=None, alias="lastHealthCheckAt")
+    last_health_status: str | None = Field(default=None, alias="lastHealthStatus")
+    consecutive_health_failures: int = Field(default=0, alias="consecutiveHealthFailures")
+    agent_version: str | None = Field(default=None, alias="agentVersion")
     actions: list[AgentActionRead] = Field(default_factory=list)
 
 
@@ -174,6 +179,10 @@ def serialize_agent(agent: Agent) -> AgentRead:
         totalEarned=agent.total_earned,
         createdAt=agent.created_at,
         updatedAt=agent.updated_at,
+        lastHealthCheckAt=agent.last_health_check_at,
+        lastHealthStatus=agent.last_health_status,
+        consecutiveHealthFailures=agent.consecutive_health_failures,
+        agentVersion=agent.agent_version,
         actions=[
             AgentActionRead(
                 id=action.id,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -51,3 +52,30 @@ class AgentRepository(BaseRepository[Agent]):
         if not kwargs:
             return await self.get_by_id(agent_id)
         return await self.update(agent_id, **kwargs)
+
+    async def update_health_status(
+        self,
+        agent_id: uuid.UUID,
+        *,
+        status: str,
+        checked_at: datetime,
+        consecutive_failures: int,
+        agent_version: str | None = None,
+    ) -> Agent | None:
+        kwargs: dict[str, Any] = {
+            "last_health_status": status,
+            "last_health_check_at": checked_at,
+            "consecutive_health_failures": consecutive_failures,
+        }
+        if agent_version is not None:
+            kwargs["agent_version"] = agent_version
+        return await self.update(agent_id, **kwargs)
+
+    async def get_all_active_for_health_check(self) -> list[tuple[uuid.UUID, str, uuid.UUID]]:
+        """Return (agent_id, base_url, owner_id) for all ACTIVE agents."""
+        result = await self.session.execute(
+            select(Agent.id, Agent.base_url, Agent.owner_id).where(
+                Agent.status == AgentStatus.ACTIVE
+            )
+        )
+        return [(row[0], row[1], row[2]) for row in result.all()]
