@@ -10,10 +10,12 @@ import os
 
 # Must be set before any app module is imported so pydantic-settings can
 # construct the Settings object without requiring a real .env file.
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-32c")
-os.environ.setdefault("JWT_SECRET", "test-jwt-secret-for-testing-only-32c")
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/testdb")
-os.environ.setdefault("DATABASE_URL_SYNC", "postgresql+psycopg2://test:test@localhost/testdb")
+os.environ["APP_ENV"] = "testing"
+os.environ["DEBUG"] = "true"
+os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-32c"
+os.environ["JWT_SECRET"] = "test-jwt-secret-for-testing-only-32c"
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://test:test@localhost/testdb"
+os.environ["DATABASE_URL_SYNC"] = "postgresql+psycopg2://test:test@localhost/testdb"
 
 import uuid
 from decimal import Decimal

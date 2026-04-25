@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from app.api.routes import (
     admin_router,
     agents_router,
+    api_keys_router,
     auth_router,
     marketplace_router,
     notifications_router,
@@ -30,6 +31,7 @@ from app.websocket.user_agent_chat import router as user_agent_ws_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.tasks.agent_health_tasks import health_check_all_agents_task
+    from app.tasks.api_key_tasks import cleanup_old_audit_logs_task, expire_old_keys_task
     from app.tasks.invoice_tasks import (
         expire_unpaid_invoices_task,
         reconcile_locked_wallets_task,
@@ -41,6 +43,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         asyncio.create_task(sync_wallet_balances_task()),
         asyncio.create_task(reconcile_locked_wallets_task()),
         asyncio.create_task(health_check_all_agents_task()),
+        asyncio.create_task(expire_old_keys_task()),
+        asyncio.create_task(cleanup_old_audit_logs_task()),
     ]
     try:
         yield
@@ -71,6 +75,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(agents_router, prefix="/api")
+app.include_router(api_keys_router, prefix="/api")
 app.include_router(marketplace_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(notifications_router, prefix="/api")

@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,15 +10,15 @@ from tests.conftest import make_user
 
 
 def _make_raw_key(prefix: str = "abcdefgh") -> str:
-    """Return a 24-char raw API key with a recognisable prefix."""
-    return prefix + uuid.uuid4().hex[:16]
+    """Return a raw API key with a recognisable 16-char prefix."""
+    return prefix.ljust(16, "x")[:16] + uuid.uuid4().hex[:24]
 
 
 async def _create_key(db_session: AsyncSession, user_id: uuid.UUID, raw_key: str, **kwargs):
     defaults = dict(
         user_id=user_id,
         name="Test Key",
-        key_prefix=raw_key[:8],
+        key_prefix=raw_key[:16],
         key_hash=hash_password(raw_key),
         environment=ApiKeyEnvironment.SANDBOX,
         permissions=[],
@@ -35,7 +36,7 @@ async def test_create_api_key(db_session: AsyncSession) -> None:
     raw_key = _make_raw_key()
     key = await _create_key(db_session, user.id, raw_key)
     assert key.id is not None
-    assert key.key_prefix == raw_key[:8]
+    assert key.key_prefix == raw_key[:16]
     assert key.is_active is True
     # Hash must NOT equal the plain key
     assert key.key_hash != raw_key
@@ -121,22 +122,29 @@ async def test_validate_key_success_returns_key(db_session: AsyncSession) -> Non
 
     result = await ApiKeyRepository(db_session).validate_key(raw_key)
     assert result is not None
-    assert result.key_prefix == raw_key[:8]
+    assert result.key_prefix == raw_key[:16]
 
 
-async def test_validate_key_updates_last_used_at(db_session: AsyncSession) -> None:
+async def test_track_usage_updates_last_used_at_and_count(db_session: AsyncSession) -> None:
     user = await make_user(db_session)
     raw_key = _make_raw_key()
     key = await _create_key(db_session, user.id, raw_key)
     assert key.last_used_at is None
 
-    await ApiKeyRepository(db_session).validate_key(raw_key)
+    await ApiKeyRepository(db_session).track_usage(
+        key.id,
+        ip="192.0.2.1",
+        user_agent="pytest",
+    )
     # Re-fetch to confirm the DB value was written
     from app.models.api_keys import ApiKey
 
     refreshed = await db_session.get(ApiKey, key.id)
     assert refreshed is not None
     assert refreshed.last_used_at is not None
+    assert refreshed.usage_count == 1
+    assert refreshed.last_used_ip == "192.0.2.1"
+    assert refreshed.last_used_user_agent == "pytest"
 
 
 async def test_validate_key_wrong_secret_returns_none(db_session: AsyncSession) -> None:
@@ -144,8 +152,8 @@ async def test_validate_key_wrong_secret_returns_none(db_session: AsyncSession) 
     raw_key = _make_raw_key("abcdefgh")
     await _create_key(db_session, user.id, raw_key)
 
-    # Same 8-char prefix, different tail — bcrypt check must fail
-    wrong_key = "abcdefgh" + "X" * 16
+    # Same 16-char prefix, different tail — bcrypt check must fail
+    wrong_key = "abcdefghxxxxxxxx" + "X" * 24
     result = await ApiKeyRepository(db_session).validate_key(wrong_key)
     assert result is None
 
@@ -156,6 +164,20 @@ async def test_validate_key_revoked_returns_none(db_session: AsyncSession) -> No
     key = await _create_key(db_session, user.id, raw_key)
 
     await ApiKeyRepository(db_session).revoke(key.id)
+    result = await ApiKeyRepository(db_session).validate_key(raw_key)
+    assert result is None
+
+
+async def test_validate_key_expired_returns_none(db_session: AsyncSession) -> None:
+    user = await make_user(db_session)
+    raw_key = _make_raw_key()
+    await _create_key(
+        db_session,
+        user.id,
+        raw_key,
+        expires_at=datetime.now(UTC) - timedelta(days=1),
+    )
+
     result = await ApiKeyRepository(db_session).validate_key(raw_key)
     assert result is None
 

@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
 from app.auth.jwt import AccessTokenExpiredError, InvalidAccessTokenError, decode_access_token
 from app.models.users import User, UserStatus
-from app.repositories.api_key_repo import ApiKeyRepository
 from app.repositories.user_repo import UserRepository
+from app.services.api_key_service import ApiKeyRateLimitError, ApiKeyService
 
 _bearer = HTTPBearer(auto_error=False)
 
 
 async def get_caller_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     x_api_key: str | None = Header(None, alias="x-api-key"),
     db: AsyncSession = Depends(get_session),
@@ -28,7 +29,7 @@ async def get_caller_user(
     if credentials:
         user = await _user_from_jwt(credentials.credentials, db)
     elif x_api_key:
-        user = await _user_from_api_key(x_api_key, db)
+        user = await _user_from_api_key(x_api_key, db, request)
 
     if user is None:
         raise HTTPException(
@@ -58,11 +59,16 @@ async def _user_from_jwt(token: str, db: AsyncSession) -> User | None:
     return await repo.get_by_id(uuid.UUID(payload.sub))
 
 
-async def _user_from_api_key(raw_key: str, db: AsyncSession) -> User | None:
-    key_repo = ApiKeyRepository(db)
-    api_key = await key_repo.validate_key(raw_key)
-    if api_key is None:
-        return None
-
-    user_repo = UserRepository(db)
-    return await user_repo.get_by_id(api_key.user_id)
+async def _user_from_api_key(raw_key: str, db: AsyncSession, request: Request) -> User | None:
+    try:
+        return await ApiKeyService(db).get_user_from_key(
+            raw_key,
+            ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except ApiKeyRateLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers={"Retry-After": str(exc.retry_after)},
+        ) from exc
