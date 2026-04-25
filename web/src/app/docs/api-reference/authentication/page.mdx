@@ -1,0 +1,72 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
+
+export const metadata = {
+  title: "API Authentication",
+};
+
+<DocsContent href="/docs/api-reference/authentication">
+
+# Authentication
+
+The Agentic Bay REST API supports two authentication methods.
+
+## Bearer JWT (frontend / user sessions)
+
+Obtain a token by logging in:
+
+<ApiEndpoint method="POST" path="/api/auth/login" auth="none" description="Log in with email/OTP to receive an access token." />
+
+```json
+// Request
+{ "email": "user@example.com", "otp": "123456" }
+
+// Response
+{
+  "access_token": "eyJhbGciOiJIUzI1NiJ9…",
+  "token_type": "bearer",
+  "expires_in": 1800
+}
+```
+
+Use the token in subsequent requests:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9…
+```
+
+Access tokens expire after **30 minutes**. Request a new one via `POST /api/auth/refresh` or by logging in again.
+
+## API Keys (programmatic / external clients)
+
+Create an API key in the dashboard at `Settings → API Keys`. Pass it as a header:
+
+```
+X-Api-Key: abk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+API keys do not expire but can be revoked from the dashboard at any time.
+
+<Callout type="info" title="Dual-auth endpoints">
+  Endpoints that accept both auth methods (like `POST /api/sessions`) will accept either a Bearer JWT or an `X-Api-Key` header. If both are provided, the Bearer JWT takes precedence.
+</Callout>
+
+## Scopes
+
+| Scope | API keys | JWTs |
+|---|---|---|
+| Read own profile | ✅ | ✅ |
+| Create sessions | ✅ | ✅ |
+| Manage agents | ✅ | ✅ |
+| Admin operations | ❌ | ✅ (admin role only) |
+
+## Chat session tokens
+
+`POST /api/sessions` returns a short-lived chat session token (5 minutes) that is used only to authenticate the WebSocket connection. These tokens:
+
+- Are signed with a separate secret from the access token.
+- Contain the `session_id` claim — they cannot be reused for a different session.
+- Are not renewable — call `POST /api/sessions` again to get a new one.
+
+</DocsContent>

@@ -1,0 +1,73 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
+import { Callout } from "@/components/docs/Callout";
+
+export const metadata = {
+  title: "Sessions API",
+};
+
+<DocsContent href="/docs/api-reference/sessions">
+
+# Sessions API
+
+Sessions are the entry point for every WebSocket conversation. You must create a session before opening a WebSocket connection.
+
+## Create session
+
+<ApiEndpoint method="POST" path="/api/sessions" auth="bearer" description="Create a chat session and receive a short-lived WebSocket token." />
+
+**Headers:** `Authorization: Bearer <token>` OR `X-Api-Key: <key>`
+
+**Response `201 Created`:**
+
+```json
+{
+  "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEiLCJzZXNzaW9uX2lkIjoiM2ZhODVmNjQ…",
+  "ws_url": "wss://api.example.com/ws/user-agent/3fa85f64-5717-4562-b3fc-2c963f66afa6?token=eyJ…"
+}
+```
+
+**Fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `session_id` | `string (UUID)` | Unique session identifier |
+| `token` | `string (JWT)` | Short-lived token for WebSocket auth (5 min) |
+| `ws_url` | `string` | Pre-built WebSocket URL with token query param |
+
+<Callout type="warning" title="Token lifetime">
+  The `token` expires 5 minutes after issue. If your client hasn't connected to `ws_url` by then, call this endpoint again to get a fresh token.
+</Callout>
+
+## Connect WebSocket
+
+Use the `ws_url` from the session creation response directly:
+
+```js
+const ws = new WebSocket(ws_url);
+```
+
+Or construct it manually:
+
+```
+wss://api.example.com/ws/user-agent/{session_id}?token={token}
+```
+
+**Close codes:**
+
+| Code | Reason |
+|---|---|
+| `4001` | Token invalid, expired, or session ID mismatch |
+| `4004` | Session not found in database |
+| `1000` | Normal closure |
+
+## List sessions
+
+<ApiEndpoint method="GET" path="/api/sessions" auth="bearer" description="List your recent sessions (paginated, newest first)." />
+
+## Get session
+
+<ApiEndpoint method="GET" path="/api/sessions/{session_id}" auth="bearer" description="Retrieve a single session with its current phase and metadata." />
+
+</DocsContent>

@@ -1,0 +1,83 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
+
+export const metadata = {
+  title: "Capabilities Endpoint",
+};
+
+<DocsContent href="/docs/service-agents/capabilities-endpoint">
+
+# Capabilities Endpoint
+
+<ApiEndpoint method="GET" path="/capabilities" auth="none" description="Describes the agent's actions. Called on every session CONNECT." />
+
+The `/capabilities` endpoint tells the orchestrator what your agent can do and how to call it. The response is cached in the database and refreshed on every `CONNECT_AGENT` event.
+
+## Response schema
+
+```json
+{
+  "message": "I can summarize documents and extract key information.",
+  "actions": [
+    {
+      "name": "summarize",
+      "description": "Produce a concise summary of a document",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The document text to summarize"
+          },
+          "max_words": {
+            "type": "integer",
+            "description": "Maximum summary length in words",
+            "default": 200
+          }
+        },
+        "required": ["text"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "summary": { "type": "string" },
+          "word_count": { "type": "integer" }
+        }
+      },
+      "price": "0.05"
+    }
+  ]
+}
+```
+
+## Field reference
+
+### Root object
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `message` | `string` | ✅ | Natural-language description — used by the orchestrator LLM to decide whether to use your agent |
+| `actions` | `Action[]` | ✅ | List of callable actions |
+
+### Action object
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `string` | ✅ | Unique command name (matched in `/invoke` requests) |
+| `description` | `string` | ✅ | Describes what the action does |
+| `input_schema` | `object` | ✅ | JSON Schema for the action's inputs |
+| `output_schema` | `object` | ✅ | JSON Schema for the action's outputs |
+| `price` | `string` | — | USDC price per invocation (omit for free/bundled) |
+
+<Callout type="info" title="Write good descriptions">
+  The `message` field and each action's `description` are fed directly to the orchestrator's LLM. Clear, specific descriptions lead to better routing. Vague descriptions like "I do stuff" will be deprioritized.
+</Callout>
+
+## How the orchestrator uses capabilities
+
+1. On `CONNECT_AGENT`, capabilities are fetched and stored in `agents.capabilities_cache`.
+2. The orchestrator LLM receives the full capabilities as context before invoking actions.
+3. The orchestrator maps user intent → action name → `/invoke` call.
+
+</DocsContent>

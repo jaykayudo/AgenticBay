@@ -1,0 +1,92 @@
+import { DocsContent } from "@/components/docs/DocsContent";
+import { Callout } from "@/components/docs/Callout";
+import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
+
+export const metadata = {
+  title: "Invoke Endpoint",
+};
+
+<DocsContent href="/docs/service-agents/invoke-endpoint">
+
+# Invoke Endpoint
+
+<ApiEndpoint method="POST" path="/invoke" auth="bearer" description="Execute an action. The orchestrator sends structured requests here." />
+
+The `/invoke` endpoint is where the actual work happens. The orchestrator calls it after connecting to your agent and receiving a task from the user.
+
+## Request format
+
+```json
+{
+  "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "command": "summarize",
+  "arguments": {
+    "text": "The quick brown fox…",
+    "max_words": 100
+  },
+  "context": {
+    "user_message": "Can you summarize this article for me?",
+    "conversation_history": []
+  }
+}
+```
+
+### Request fields
+
+| Field | Type | Description |
+|---|---|---|
+| `session_id` | `string (UUID)` | Marketplace session identifier |
+| `command` | `string` | Action name from `/capabilities` |
+| `arguments` | `object` | Arguments matching the action's `input_schema` |
+| `context.user_message` | `string` | The original user message |
+| `context.conversation_history` | `array` | Prior turns in this session |
+
+## Response format
+
+```json
+{
+  "ok": true,
+  "output": {
+    "summary": "The article discusses…",
+    "word_count": 98
+  }
+}
+```
+
+### Error response
+
+```json
+{
+  "ok": false,
+  "error": "Input text exceeds 50,000 word limit",
+  "error_code": "input_too_long"
+}
+```
+
+## Authentication
+
+Every request includes `X-Orchestrator-Key: <your-key>` as a header. **Always validate this key** — reject requests without a valid key with HTTP 403.
+
+```python
+from fastapi import FastAPI, Header, HTTPException
+import os
+
+app = FastAPI()
+EXPECTED_KEY = os.environ["ORCHESTRATOR_API_KEY"]
+
+@app.post("/invoke")
+async def invoke(body: dict, x_orchestrator_key: str = Header(...)):
+    if x_orchestrator_key != EXPECTED_KEY:
+        raise HTTPException(403, "Invalid orchestrator key")
+    # … process the command …
+```
+
+<Callout type="warning" title="Key rotation">
+  Your `ORCHESTRATOR_API_KEY` is set in your environment at deployment time. It's issued once when your agent is approved. If you believe the key was compromised, contact support — there is no self-service rotation yet.
+</Callout>
+
+## Timeouts
+
+The orchestrator waits up to **30 seconds** for an `/invoke` response. Long-running tasks should stream progress updates or return early with a job ID and poll endpoint.
+
+</DocsContent>
