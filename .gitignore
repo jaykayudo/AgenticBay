@@ -12,6 +12,7 @@ __pycache__/
 dist/
 build/
 .pytest_cache/
+pytest-cache-files-*/
 .mypy_cache/
 .ruff_cache/
 htmlcov/
@@ -35,3 +36,10 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+
+issue_descriptions.md
+reviews.md
+
+#claude local settings 
+.claude/

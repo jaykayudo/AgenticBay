@@ -1,0 +1,137 @@
+You are a senior product designer and frontend engineer.
+
+Build a clean, premium, production-quality dashboard UI for an agent marketplace.
+
+The design must NOT look AI-generated.
+It should look like it was designed by a strong product designer for a real startup.
+
+Design goals:
+- clean
+- minimal
+- credible
+- modern
+- product-focused
+- calm and structured
+- visually refined without being flashy
+
+Important visual rules:
+- Prioritize clarity over decoration
+- Use strong spacing and alignment
+- Keep the interface understated and professional
+- Avoid visual noise
+- Use a limited color palette
+- Use color intentionally, not everywhere
+- Make it feel like a real SaaS product, not a concept shot
+
+Theme direction:
+Use the reference theme as inspiration for layout language and brand tone, but simplify it into a more realistic product UI.
+
+The interface should support both dark and light mode.
+Dark mode should feel elegant and restrained.
+Light mode should feel soft, clean, and polished.
+Both modes must use the same design system.
+
+Brand style:
+- Main brand color: purple
+- Supporting accent: teal/cyan used sparingly
+- Optional alert/accent color: soft coral used only when needed
+- Avoid overusing accent colors
+
+Visual style:
+- Large rounded cards, but not overly stylized
+- Soft shadows
+- Subtle borders
+- Clear typography hierarchy
+- Calm dashboard layout
+- Clean charts with minimal clutter
+- No excessive gradients
+- No glowing neon effects
+- No glassmorphism
+- No “futuristic AI” gimmicks
+- No flashy crypto-dashboard aesthetics
+
+Layout rules:
+- Use a balanced dashboard layout with clear grouping
+- Preserve whitespace
+- Avoid overcrowding
+- Use fewer, better cards instead of many small panels
+- Make each section feel intentional
+- Use consistent internal padding and spacing throughout
+
+Component rules:
+- Sidebar should be simple and elegant
+- Search/input areas should look integrated and understated
+- KPI cards should be readable and compact
+- Charts should be smooth, minimal, and easy to scan
+- Tables should feel like real product tables, not dribbble mockups
+- Status badges should be subtle and functional
+- Buttons should be clean and unobtrusive
+
+Typography:
+- Use a modern sans-serif
+- Strong but simple heading hierarchy
+- Avoid oversized hero text
+- Metric numbers should be prominent
+- Secondary text should be muted but readable
+
+Dark theme tokens:
+- --bg: #0f1220
+- --bg-elevated: #151a2d
+- --surface: #1b2138
+- --surface-2: #242b45
+- --primary: #6c5ce7
+- --accent: #3fcfbe
+- --danger: #f07c6c
+- --text: #f3f4f6
+- --text-muted: #98a2b3
+- --border: rgba(255,255,255,0.06)
+- --shadow: 0 8px 24px rgba(0,0,0,0.24)
+
+Light theme tokens:
+- --bg: #f6f7fb
+- --bg-elevated: #ffffff
+- --surface: #ffffff
+- --surface-2: #f1f4fb
+- --primary: #6c5ce7
+- --accent: #14b8a6
+- --danger: #ef7d6d
+- --text: #111827
+- --text-muted: #667085
+- --border: rgba(17,24,39,0.08)
+- --shadow: 0 8px 24px rgba(15,23,42,0.08)
+
+Implementation requirements:
+- Use design tokens / CSS variables for all colors
+- Keep spacing, radius, shadows, and typography consistent
+- Make the UI feel handcrafted and intentional
+- Prefer fewer visual ideas executed well
+- Avoid random decorative elements
+- Avoid placeholder-looking fake product design
+- Output production-ready code
+- Include a theme toggle
+- Make it responsive
+
+Do not do any of the following:
+- Do not make it look like an AI-generated dashboard
+- Do not add unnecessary gradients
+- Do not add too many accent colors
+- Do not over-design the charts
+- Do not use excessive icon decorations
+- Do not create a dribbble-style concept instead of a usable UI
+- Do not cram too much onto the screen
+- Do not use generic default component library styling without refinement
+
+Product context:
+This is an agent marketplace dashboard with:
+- agents
+- jobs
+- payments
+- escrow
+- performance analytics
+
+If content is needed, invent realistic product content.
+
+Before generating code:
+1. Summarize the layout and component structure in 5-8 bullets
+2. Explain how the theme system works
+3. Then generate the final code

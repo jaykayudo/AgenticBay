@@ -1,10 +1,11 @@
 .PHONY: help up down build restart logs ps \
         backend-shell backend-logs backend-lint backend-format backend-test backend-migrate backend-migrate-create \
         web-shell web-logs web-lint web-format web-type-check \
-        db-shell db-reset redis-cli \
+        up-local-db db-shell db-reset redis-cli \
         install install-backend install-web
 
 COMPOSE = docker compose
+COMPOSE_LOCAL_DB = $(COMPOSE) --profile local-db
 BACKEND = $(COMPOSE) exec backend
 WEB     = $(COMPOSE) exec web
 
@@ -18,6 +19,9 @@ help: ## Show this help message
 
 up: ## Start all services
 	$(COMPOSE) up -d
+
+up-local-db: ## Start the optional local Postgres container
+	$(COMPOSE_LOCAL_DB) up -d postgres
 
 up-build: ## Build and start all services
 	$(COMPOSE) up -d --build
@@ -109,12 +113,12 @@ web-type-check: ## Run TypeScript type check on web
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
-db-shell: ## Open a psql shell in the postgres container
-	$(COMPOSE) exec postgres psql -U postgres -d agentic_bay
+db-shell: ## Open a psql shell in the optional local postgres container
+	$(COMPOSE_LOCAL_DB) exec postgres psql -U postgres -d agentic_bay
 
 db-reset: ## Drop and recreate the database (destructive!)
-	$(COMPOSE) exec postgres psql -U postgres -c "DROP DATABASE IF EXISTS agentic_bay;"
-	$(COMPOSE) exec postgres psql -U postgres -c "CREATE DATABASE agentic_bay;"
+	$(COMPOSE_LOCAL_DB) exec postgres psql -U postgres -c "DROP DATABASE IF EXISTS agentic_bay;"
+	$(COMPOSE_LOCAL_DB) exec postgres psql -U postgres -c "CREATE DATABASE agentic_bay;"
 	$(MAKE) backend-migrate
 
 redis-cli: ## Open a redis-cli shell

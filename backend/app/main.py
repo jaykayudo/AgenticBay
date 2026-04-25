@@ -1,21 +1,55 @@
+from __future__ import annotations
+
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.routes import (
+    admin_router,
+    agents_router,
+    auth_router,
+    marketplace_router,
+    notifications_router,
+    sessions_router,
+    wallet_router,
+    webhooks_router,
+)
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.database import close_asyncpg_pool
 from app.core.redis import close_redis
-from app.websocket.manager import manager
+from app.websocket.orchestrator import router as ws_router
+from app.websocket.user_agent_chat import router as user_agent_ws_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    yield
-    await close_redis()
+    from app.tasks.agent_health_tasks import health_check_all_agents_task
+    from app.tasks.invoice_tasks import (
+        expire_unpaid_invoices_task,
+        reconcile_locked_wallets_task,
+        sync_wallet_balances_task,
+    )
+
+    tasks = [
+        asyncio.create_task(expire_unpaid_invoices_task()),
+        asyncio.create_task(sync_wallet_balances_task()),
+        asyncio.create_task(reconcile_locked_wallets_task()),
+        asyncio.create_task(health_check_all_agents_task()),
+    ]
+    try:
+        yield
+    finally:
+        for t in tasks:
+            t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await close_redis()
+        await close_asyncpg_pool()
 
 
 app = FastAPI(
@@ -35,28 +69,17 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+app.include_router(auth_router, prefix="/api")
+app.include_router(agents_router, prefix="/api")
+app.include_router(marketplace_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+app.include_router(notifications_router, prefix="/api")
+app.include_router(wallet_router, prefix="/api")
+app.include_router(webhooks_router, prefix="/api")
+app.include_router(sessions_router, prefix="/api")
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
-
-
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
-    await manager.connect(websocket, client_id)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            event = data.get("event", "message")
-
-            if event == "join_room":
-                manager.join_room(client_id, data["room"])
-                await manager.send(client_id, {"event": "joined", "room": data["room"]})
-            elif event == "leave_room":
-                manager.leave_room(client_id, data["room"])
-            elif event == "broadcast_room":
-                await manager.broadcast_to_room(data["room"], data.get("payload", {}))
-            else:
-                await manager.broadcast({"event": event, "from": client_id, "payload": data})
-    except WebSocketDisconnect:
-        manager.disconnect(client_id)
+app.include_router(ws_router)
+app.include_router(user_agent_ws_router)
 
 
 @app.get("/", include_in_schema=False)
