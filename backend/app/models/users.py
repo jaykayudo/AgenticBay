@@ -74,6 +74,15 @@ class User(BaseModel):
         Numeric(precision=20, scale=6), nullable=True
     )
 
+    # Auto-pay settings for the marketplace user agent
+    auto_pay_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    auto_pay_max_per_job: Mapped[Decimal | None] = mapped_column(
+        Numeric(precision=20, scale=6), nullable=True
+    )
+    auto_pay_max_per_day: Mapped[Decimal | None] = mapped_column(
+        Numeric(precision=20, scale=6), nullable=True
+    )
+
     # Notification preferences stored as flexible JSON
     notification_preferences: Mapped[dict[str, Any]] = mapped_column(
         JSONB, default=dict, server_default="{}", nullable=False

@@ -74,10 +74,15 @@ class OrchestratorWSClient:
         except Exception:
             logger.exception("[%s] Error handling message", self.session_id)
             await self.send(
-                {"type": "ERROR", "data": {"message": "Internal error processing command"}}
+                {
+                    "type": "ERROR",
+                    "data": {"message": "Internal error processing command"},
+                }
             )
 
     async def send(self, message: dict) -> None:
         if self.ws and self._running:
             await self.ws.send(json.dumps(message))
-            logger.debug("[%s] Sent: %s", self.session_id, message.get("type", "response"))
+            logger.debug(
+                "[%s] Sent: %s", self.session_id, message.get("type", "response")
+            )

@@ -93,8 +93,12 @@ async def test_payment_confirmed_missing_invoice_id_returns_error(mgr):
 
 
 @pytest.mark.asyncio
-async def test_payment_confirmed_without_pending_document_returns_progress(mgr, monkeypatch):
-    monkeypatch.setattr("src.command_handlers.verify_invoice_payment", lambda **_: _true())
+async def test_payment_confirmed_without_pending_document_returns_progress(
+    mgr, monkeypatch
+):
+    monkeypatch.setattr(
+        "src.command_handlers.verify_invoice_payment", lambda **_: _true()
+    )
     result = await handle_command(
         "sess-1", "payment_confirmed", {"invoice_id": "inv-001"}, mgr
     )
@@ -104,7 +108,9 @@ async def test_payment_confirmed_without_pending_document_returns_progress(mgr, 
 
 
 @pytest.mark.asyncio
-async def test_payment_confirmed_with_pending_document_returns_job_done(mgr, monkeypatch):
+async def test_payment_confirmed_with_pending_document_returns_job_done(
+    mgr, monkeypatch
+):
     async def fake_verify(**_):
         return True
 
@@ -131,10 +137,10 @@ async def test_payment_confirmed_with_pending_document_returns_job_done(mgr, mon
 
 @pytest.mark.asyncio
 async def test_payment_confirmed_marks_paid_invoice_id(mgr, monkeypatch):
-    monkeypatch.setattr("src.command_handlers.verify_invoice_payment", lambda **_: _true())
-    await handle_command(
-        "sess-1", "payment_confirmed", {"invoice_id": "inv-xyz"}, mgr
+    monkeypatch.setattr(
+        "src.command_handlers.verify_invoice_payment", lambda **_: _true()
     )
+    await handle_command("sess-1", "payment_confirmed", {"invoice_id": "inv-xyz"}, mgr)
 
     # Even after reset, the invoice id is recorded (mark_paid was called)
     # We check via the paid_invoice_ids list before state is reset
