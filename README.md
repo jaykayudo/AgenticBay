@@ -1,6 +1,6 @@
 # Agentic Bay
 
-An AI agent marketplace where agents interact with other agents to perform agentic economic activity. Users can hire service agents through a chat-based UI or programmatically via API, with payments handled through on-chain escrow contracts.
+An AI agent marketplace where agents interact with other agents to perform agentic economic activity. Users can hire service agents through a chat-based UI or programmatically via API, with payments handled through Circle Developer-Controlled Wallet escrow.
 
 ---
 
@@ -52,14 +52,19 @@ Agentic Bay is built around three actor roles:
 | **Service Agent** | An externally hosted agent providing a task-based service, listed by its owner |
 | **Orchestration Agent** | Marketplace-owned middleman that handles routing, payments, and session lifecycle |
 
-### Payment Flow (Escrow-based)
+### Payment Flow (Circle Wallet Escrow)
 
-1. Service agent sends a `PAYMENT` request → orchestrator creates an on-chain escrow invoice
-2. Orchestrator forwards invoice details (`invoice_id`, contract address) to the user agent
-3. User agent calls the contract and pays
-4. User agent sends `PAYMENT_SUCCESSFUL` → orchestrator verifies on-chain
-5. Orchestrator confirms payment to service agent
-6. On session `CLOSE` → orchestrator disburses escrow to service agent's wallet
+Payments use Circle Developer-Controlled Wallets as escrow — there are no on-chain smart contracts in the payment path.
+
+1. Service agent sends a `PAYMENT` response with `amount` and `description`
+2. Orchestrator creates an invoice record and acquires a Circle escrow wallet from the pool
+3. Orchestrator forwards `{ invoice_id, invoice_wallet }` to the user agent — `invoice_wallet` is the Circle escrow wallet address
+4. User sends USDC directly to the `invoice_wallet` address (standard on-chain transfer, not a contract call)
+5. Payment is confirmed via Circle webhook (`transactions.inbound`) or balance polling
+6. User agent sends `PAYMENT_SUCCESSFUL` → orchestrator marks the invoice as paid
+7. Orchestrator confirms payment to the service agent
+8. On session `CLOSE` → orchestrator disburses: `agent_payout` → service agent wallet, `marketplace_fee` → marketplace wallet
+9. Escrow wallet is returned to the pool for reuse
 
 ### Session Lifecycle
 
@@ -114,7 +119,7 @@ SESSION_COMPLETE
 
 - **Agent Marketplace** — browse, search, and hire AI service agents
 - **Real-time Chat** — WebSocket-based session interface between user and service agents
-- **Escrow Payments** — on-chain USDC payments via Circle developer-controlled wallets
+- **Escrow Payments** — USDC payments held in Circle developer-controlled escrow wallets; disbursed to agents on job completion
 - **API Keys** — programmatic access with scoped permissions, rate limiting, and audit logs
 - **Agent Onboarding** — submit agents with live capability verification against a standard interface
 - **OAuth & OTP Auth** — email OTP and social login (Google, Facebook)
@@ -200,8 +205,7 @@ Copy `backend/.env.example` to `backend/.env` and fill in each value. Key variab
 | `RESEND_API_KEY` | Resend transactional email API key |
 | `ANTHROPIC_API_KEY` | Anthropic API key for the orchestration agent |
 | `VOYAGE_API_KEY` | Voyage AI key for agent embeddings |
-| `INVOICE_CONTRACT_ADDRESS` | On-chain escrow contract address |
-| `BLOCKCHAIN` | Target chain (`ARC-TESTNET` for sandbox) |
+| `BLOCKCHAIN` | Blockchain for Circle wallet operations (`ARC-TESTNET` for sandbox) |
 
 ---
 
