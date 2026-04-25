@@ -4,20 +4,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   Check,
-  Copy,
   CreditCard,
   KeyRound,
   LoaderCircle,
   LockKeyhole,
   Pencil,
-  Plus,
   ShieldCheck,
-  Trash2,
   UserRound,
   X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { ApiKeyManagementPanel } from "@/components/dashboard/ApiKeyManagementPanel";
 import { useApiQuery } from "@/hooks/useApi";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -53,11 +51,6 @@ type UserSettingsResponse = {
   notifications: UserSettingsNotification[];
 };
 
-type GeneratedKeyPayload = {
-  key: UserSettingsApiKey;
-  fullKey: string;
-};
-
 const tabs: Array<{ value: SettingsTab; label: string; icon: typeof UserRound }> = [
   { value: "profile", label: "Profile", icon: UserRound },
   { value: "security", label: "Security", icon: ShieldCheck },
@@ -65,12 +58,6 @@ const tabs: Array<{ value: SettingsTab; label: string; icon: typeof UserRound }>
   { value: "notifications", label: "Notifications", icon: Bell },
   { value: "billing", label: "Billing", icon: CreditCard },
 ];
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
 
 function roleLabel(role: UserSettingsProfile["role"]) {
   const labels: Record<UserSettingsProfile["role"], string> = {
@@ -157,13 +144,6 @@ export function UserSettingsPage() {
   const [emailDraft, setEmailDraft] = useState("");
   const [profileError, setProfileError] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
-  const [keyEnvironment, setKeyEnvironment] =
-    useState<UserSettingsApiKey["environment"]>("Development");
-  const [generatedKey, setGeneratedKey] = useState<GeneratedKeyPayload | null>(null);
-  const [generatingKey, setGeneratingKey] = useState(false);
-  const [keyToRevoke, setKeyToRevoke] = useState<UserSettingsApiKey | null>(null);
-  const [revokingKey, setRevokingKey] = useState(false);
-  const [copiedValue, setCopiedValue] = useState("");
   const [updatingNotificationId, setUpdatingNotificationId] = useState("");
 
   const settingsQuery = useApiQuery<UserSettingsResponse>(["user-settings"], "/user/settings");
@@ -174,12 +154,6 @@ export function UserSettingsPage() {
     setEmailDraft(profile.email);
     setProfileError("");
     setEditingProfile(true);
-  }
-
-  async function copyValue(value: string, label: string) {
-    await navigator.clipboard.writeText(value);
-    setCopiedValue(label);
-    window.setTimeout(() => setCopiedValue(""), 1600);
   }
 
   async function saveProfile() {
@@ -200,41 +174,6 @@ export function UserSettingsPage() {
       setProfileError(error instanceof Error ? error.message : "Profile update failed.");
     } finally {
       setSavingProfile(false);
-    }
-  }
-
-  async function generateKey() {
-    setGeneratingKey(true);
-
-    try {
-      const response = await apiFetch<GeneratedKeyPayload>("/user/settings/api-keys", {
-        method: "post",
-        data: {
-          environment: keyEnvironment,
-        },
-      });
-      setGeneratedKey(response);
-      await queryClient.invalidateQueries({ queryKey: ["user-settings"] });
-    } finally {
-      setGeneratingKey(false);
-    }
-  }
-
-  async function revokeKey() {
-    if (!keyToRevoke) {
-      return;
-    }
-
-    setRevokingKey(true);
-
-    try {
-      await apiFetch(`/user/settings/api-keys/${encodeURIComponent(keyToRevoke.id)}`, {
-        method: "delete",
-      });
-      await queryClient.invalidateQueries({ queryKey: ["user-settings"] });
-      setKeyToRevoke(null);
-    } finally {
-      setRevokingKey(false);
     }
   }
 
@@ -412,104 +351,7 @@ export function UserSettingsPage() {
         </section>
       ) : null}
 
-      {settings && activeTab === "apiKeys" ? (
-        <section className="app-panel p-5 sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--text)]">API key management</h2>
-              <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-                Existing keys show environment, prefix, and creation metadata. Full secrets are only
-                displayed once when generated.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <select
-                value={keyEnvironment}
-                onChange={(event) =>
-                  setKeyEnvironment(event.target.value as UserSettingsApiKey["environment"])
-                }
-                className="h-11 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-medium text-[var(--text)] outline-none focus:border-[var(--primary)]"
-              >
-                <option>Development</option>
-                <option>Production</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => void generateKey()}
-                disabled={generatingKey}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)] disabled:opacity-60"
-              >
-                {generatingKey ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-                Generate New Key
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {settings.apiKeys.length === 0 ? (
-              <div className="app-subtle p-6 text-sm text-[var(--text-muted)]">
-                No API keys yet. Generate a key when you are ready to connect an integration.
-              </div>
-            ) : null}
-
-            {settings.apiKeys.map((apiKey) => (
-              <article
-                key={apiKey.id}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className="app-status-badge"
-                        data-tone={apiKey.environment === "Production" ? "default" : "accent"}
-                      >
-                        {apiKey.environment}
-                      </span>
-                      <code className="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-sm text-[var(--text)]">
-                        {apiKey.prefix}...
-                      </code>
-                    </div>
-                    <p className="mt-3 text-sm text-[var(--text-muted)]">
-                      Created {dateFormatter.format(new Date(apiKey.createdAt))}
-                      {apiKey.lastUsedAt
-                        ? ` / Last used ${dateFormatter.format(new Date(apiKey.lastUsedAt))}`
-                        : " / Never used"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void copyValue(apiKey.prefix, apiKey.id)}
-                      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] px-4 text-sm font-medium text-[var(--text)] transition hover:bg-[var(--surface-2)]"
-                    >
-                      {copiedValue === apiKey.id ? (
-                        <Check className="h-4 w-4 text-[var(--accent)]" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                      {copiedValue === apiKey.id ? "Copied prefix" : "Copy prefix"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setKeyToRevoke(apiKey)}
-                      className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--danger)]/25 px-4 text-sm font-medium text-[var(--danger)] transition hover:bg-[var(--danger-soft)]"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Revoke
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {activeTab === "apiKeys" ? <ApiKeyManagementPanel /> : null}
 
       {settings && activeTab === "notifications" ? (
         <section className="app-panel p-5 sm:p-6">
@@ -621,70 +463,6 @@ export function UserSettingsPage() {
         </Modal>
       ) : null}
 
-      {generatedKey ? (
-        <Modal title="New API key generated" onClose={() => setGeneratedKey(null)}>
-          <div className="mt-5 space-y-4">
-            <div className="rounded-2xl border border-[var(--accent)]/25 bg-[var(--accent-soft)] p-4 text-sm leading-6 text-[var(--text)]">
-              This is the only time the full key will be shown. Store it somewhere safe before
-              closing this modal.
-            </div>
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-              <p className="text-sm font-medium text-[var(--text-muted)]">
-                {generatedKey.key.environment} key
-              </p>
-              <code className="mt-3 block text-sm break-all text-[var(--text)]">
-                {generatedKey.fullKey}
-              </code>
-            </div>
-            <button
-              type="button"
-              onClick={() => void copyValue(generatedKey.fullKey, "generated-key")}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)]"
-            >
-              {copiedValue === "generated-key" ? (
-                <Check className="h-4 w-4" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-              {copiedValue === "generated-key" ? "Copied full key" : "Copy full key"}
-            </button>
-          </div>
-        </Modal>
-      ) : null}
-
-      {keyToRevoke ? (
-        <Modal title="Revoke API key?" onClose={() => setKeyToRevoke(null)}>
-          <div className="mt-5 space-y-4">
-            <p className="text-sm leading-6 text-[var(--text-muted)]">
-              This will immediately disable the {keyToRevoke.environment.toLowerCase()} key with
-              prefix <span className="font-semibold text-[var(--text)]">{keyToRevoke.prefix}</span>.
-              Any connected integration using it will stop working.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => setKeyToRevoke(null)}
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-full border border-[var(--border)] px-5 text-sm font-semibold text-[var(--text)]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void revokeKey()}
-                disabled={revokingKey}
-                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--danger)] px-5 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {revokingKey ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-                Revoke key
-              </button>
-            </div>
-          </div>
-        </Modal>
-      ) : null}
     </div>
   );
 }
