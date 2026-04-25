@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -66,7 +67,7 @@ export function BuyerDashboardShell({ children }: BuyerDashboardShellProps) {
     };
   }, [pathname]);
 
-  if (pathname.startsWith("/dashboard/owner")) {
+  if (pathname.startsWith("/dashboard/owner") || pathname.startsWith("/dashboard/admin")) {
     return <>{children}</>;
   }
 
@@ -88,7 +89,10 @@ export function BuyerDashboardShell({ children }: BuyerDashboardShellProps) {
                 </div>
               </Link>
 
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <NotificationsBell />
+                <ThemeToggle />
+              </div>
             </div>
 
             <div className="app-subtle p-4">

@@ -16,8 +16,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { startTransition, useDeferredValue, useState } from "react";
 import type { ComponentType } from "react";
+import useSWR from "swr";
 
-import { useApiQuery } from "@/hooks/useApi";
+import { agentsApi, type AnalyticsRange as ApiAnalyticsRange } from "@/lib/api/agents";
 import { cn } from "@/lib/utils";
 
 type AnalyticsRange = "7d" | "30d" | "90d" | "all";
@@ -68,6 +69,10 @@ const rangeTabs: Array<{ value: AnalyticsRange; label: string }> = [
   { value: "90d", label: "90D" },
   { value: "all", label: "All" },
 ];
+
+function toApiRange(range: AnalyticsRange): ApiAnalyticsRange {
+  return range.toUpperCase() as ApiAnalyticsRange;
+}
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -214,11 +219,45 @@ export default function AgentAnalyticsPage() {
   const [selectedRange, setSelectedRange] = useState<AnalyticsRange>("30d");
   const deferredRange = useDeferredValue(selectedRange);
 
-  const analyticsQuery = useApiQuery<AgentAnalyticsResponse>(
-    ["agent-analytics", agentId, deferredRange],
-    `/agents/${encodeURIComponent(agentId)}/analytics?range=${deferredRange}`,
-    {
-      enabled: Boolean(agentId),
+  const analyticsQuery = useSWR(
+    agentId ? ["/agents/analytics", agentId, deferredRange] : null,
+    async () => {
+      const { data } = await agentsApi.getAnalytics(agentId, toApiRange(deferredRange));
+      const totalEarned = Number(data.totalEarned);
+      const totalJobs = data.totalJobs;
+      const avgJobValue = totalJobs > 0 ? totalEarned / totalJobs : 0;
+
+      return {
+        agentId: data.agentId,
+        agentName: data.agentName,
+        ownerName: "You",
+        range: deferredRange,
+        generatedAt: new Date().toISOString(),
+        summary: {
+          totalJobs,
+          totalEarned,
+          successRate: data.successRate,
+          avgJobValue,
+        },
+        revenueSeries: [{ label: rangeTabs.find((tab) => tab.value === deferredRange)?.label ?? "Range", amount: totalEarned, jobs: totalJobs }],
+        actionBreakdown: [
+          {
+            action: "All actions",
+            count: totalJobs,
+            percentage: totalJobs > 0 ? 100 : 0,
+            earned: totalEarned,
+          },
+        ],
+        reviews: [] as AgentAnalyticsResponse["reviews"],
+        responseTimeDistribution: [
+          {
+            label: "Average response",
+            count: totalJobs,
+            percentage: totalJobs > 0 ? 100 : 0,
+            averageMinutes: data.avgDurationSec ? Math.round(data.avgDurationSec / 60) : 0,
+          },
+        ],
+      } satisfies AgentAnalyticsResponse;
     }
   );
 
@@ -306,7 +345,7 @@ export default function AgentAnalyticsPage() {
         </section>
       ) : null}
 
-      {analyticsQuery.isError ? (
+      {analyticsQuery.error ? (
         <section className="app-panel p-5 sm:p-6">
           <div className="flex items-start gap-3 rounded-[1.2rem] border border-[var(--danger-soft)] bg-[var(--danger-soft)] p-4 text-[var(--danger)]">
             <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" />
@@ -371,7 +410,7 @@ export default function AgentAnalyticsPage() {
                     analytics API each time you switch tabs.
                   </p>
                 </div>
-                {analyticsQuery.isFetching ? (
+                {analyticsQuery.isValidating ? (
                   <span className="app-status-badge" data-tone="muted">
                     <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
                     Updating

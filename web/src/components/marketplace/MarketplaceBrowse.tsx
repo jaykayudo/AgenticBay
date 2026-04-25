@@ -22,8 +22,8 @@ import {
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useMarketplaceAgents } from "@/hooks/useMarketplaceAgents";
 import {
-  marketplaceAgents,
   marketplaceCategories,
   marketplaceSortOptions,
   marketplaceSpeedOptions,
@@ -116,6 +116,23 @@ function getViewValue(value: string | null): MarketplaceViewMode {
 function getRatingValue(value: string | null) {
   const parsed = parseNumberParam(value, 0);
   return ratingValueSet.has(parsed as (typeof ratingOptions)[number]["value"]) ? parsed : 0;
+}
+
+function toApiSort(sort: MarketplaceSortKey) {
+  switch (sort) {
+    case "rating":
+      return "rating" as const;
+    case "reviews":
+      return "jobs" as const;
+    case "price-low":
+      return "price_asc" as const;
+    case "price-high":
+      return "price_desc" as const;
+    case "fastest":
+    case "recommended":
+    default:
+      return "relevance" as const;
+  }
 }
 
 function buildQueryHref(
@@ -383,7 +400,7 @@ export function MarketplaceBrowse() {
     setSearchDraft(urlSearch);
   }, [urlSearch]);
 
-  const deferredSearchTerm = useDeferredValue(searchDraft.trim().toLowerCase());
+  const deferredSearchTerm = useDeferredValue(searchDraft.trim());
   const selectedCategories = parseSelectedCategories(searchParams);
   const minPrice = clamp(
     parseNumberParam(searchParams.get("minPrice"), PRICE_MIN),
@@ -403,6 +420,17 @@ export function MarketplaceBrowse() {
   const speedOption =
     marketplaceSpeedOptions.find((option) => option.value === speedValue) ??
     marketplaceSpeedOptions[0];
+  const categoryFilter = selectedCategories[0];
+  const marketplaceQuery = useMarketplaceAgents({
+    category: categoryFilter,
+    min_rating: minRating > 0 ? minRating : undefined,
+    max_price: maxPrice < PRICE_MAX ? maxPrice : undefined,
+    speed: speedValue !== "any" ? speedValue : undefined,
+    sort: toApiSort(sortValue),
+    q: deferredSearchTerm || undefined,
+    page: pageValue,
+    page_size: PAGE_SIZE,
+  });
 
   function updateQuery(
     updates: Record<string, number | string | string[] | null | undefined>,
@@ -414,35 +442,13 @@ export function MarketplaceBrowse() {
     });
   }
 
-  const filteredAgents = sortAgents(
-    marketplaceAgents.filter((agent) => {
-      const matchesSearch =
-        deferredSearchTerm.length === 0 ||
-        agent.name.toLowerCase().includes(deferredSearchTerm) ||
-        agent.description.toLowerCase().includes(deferredSearchTerm);
-      const matchesCategory =
-        selectedCategories.length === 0 ||
-        selectedCategories.some((category) => agent.categories.includes(category));
-      const matchesPrice =
-        agent.startingPriceUsdc >= minPrice && agent.startingPriceUsdc <= maxPrice;
-      const matchesRating = agent.rating >= minRating;
-      const matchesSpeed = speedOption.maxRank === null || agent.speedRank <= speedOption.maxRank;
-
-      return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesSpeed;
-    }),
-    sortValue,
-    deferredSearchTerm
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredAgents.length / PAGE_SIZE));
+  const filteredAgents = marketplaceQuery.agents;
+  const totalAgents = marketplaceQuery.total;
+  const totalPages = Math.max(1, Math.ceil(totalAgents / PAGE_SIZE));
   const currentPage = Math.min(pageValue, totalPages);
-  const visibleAgents = filteredAgents.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
-
-  const visibleStart = filteredAgents.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const visibleEnd = Math.min(currentPage * PAGE_SIZE, filteredAgents.length);
+  const visibleAgents = filteredAgents;
+  const visibleStart = totalAgents === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const visibleEnd = Math.min(currentPage * PAGE_SIZE, totalAgents);
 
   const activeFilterCount =
     selectedCategories.length +
@@ -541,7 +547,7 @@ export function MarketplaceBrowse() {
                     onChange={() => {
                       const nextCategories = checked
                         ? selectedCategories.filter((value) => value !== category.slug)
-                        : [...selectedCategories, category.slug];
+                        : [category.slug];
 
                       updateQuery({ category: nextCategories }, true);
                     }}
@@ -716,7 +722,7 @@ export function MarketplaceBrowse() {
 
           <div className="flex items-center justify-between gap-3 xl:justify-end">
             <span className="hidden rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 text-sm text-[var(--text)] md:inline-flex">
-              {filteredAgents.length} agents found
+              {totalAgents} agents found
             </span>
             <div className="hidden xl:block">
               <ThemeToggle />
@@ -748,7 +754,7 @@ export function MarketplaceBrowse() {
             </div>
 
             <div className="rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--text-muted)] shadow-[var(--shadow-soft)]">
-              Showing {visibleStart}-{visibleEnd} of {filteredAgents.length} matching agents
+              Showing {visibleStart}-{visibleEnd} of {totalAgents} matching agents
             </div>
           </div>
         </section>
@@ -937,7 +943,17 @@ export function MarketplaceBrowse() {
               </div>
             </section>
 
-            {filteredAgents.length === 0 ? (
+            {marketplaceQuery.isLoading ? (
+              <section className="app-panel p-8 text-center sm:p-10">
+                <div className="mx-auto h-12 w-12 animate-pulse rounded-2xl bg-[var(--surface-3)]" />
+                <h2 className="mt-5 text-2xl font-semibold tracking-[-0.03em] text-[var(--text)]">
+                  Loading marketplace agents
+                </h2>
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--text-muted)] sm:text-[15px]">
+                  Fetching the latest public marketplace listings for this URL state.
+                </p>
+              </section>
+            ) : totalAgents === 0 ? (
               <section className="app-panel p-8 text-center sm:p-10">
                 <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--primary-soft)] text-[var(--primary)]">
                   <SlidersHorizontal className="h-6 w-6" />

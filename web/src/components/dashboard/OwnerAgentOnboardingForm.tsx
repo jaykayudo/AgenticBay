@@ -3,7 +3,9 @@
 import { AlertTriangle, CheckCircle2, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { useApiMutation } from "@/hooks/useApi";
+import { useAgentValidation } from "@/hooks/useAgentValidation";
+import { agentsApi } from "@/lib/api/agents";
+import { isApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
 
 type StepKey = "info" | "config" | "price" | "review";
@@ -26,6 +28,7 @@ type DraftPayload = {
   category: string;
   tags: string[];
   externalEndpointUrl: string;
+  profileImageData?: string;
   actions: ActionRow[];
 };
 
@@ -65,20 +68,14 @@ export function OwnerAgentOnboardingForm() {
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [externalEndpointUrl, setExternalEndpointUrl] = useState("");
+  const [profileImageData, setProfileImageData] = useState<string | undefined>();
   const [actions, setActions] = useState<ActionRow[]>([createActionRow()]);
   const [stepError, setStepError] = useState<string | null>(null);
   const [pendingNotice, setPendingNotice] = useState<string | null>(null);
   const [endpointResults, setEndpointResults] = useState<EndpointCheckResult[]>([]);
-
-  const draftMutation = useApiMutation<{ savedAt: string }, DraftPayload>(
-    "/owner/agents/onboarding/draft"
-  );
-  const endpointCheckMutation = useApiMutation<{ results: EndpointCheckResult[] }, DraftPayload>(
-    "/owner/agents/onboarding/check-endpoints"
-  );
-  const submitMutation = useApiMutation<{ status: string; notice: string }, DraftPayload>(
-    "/owner/agents/onboarding/submit"
-  );
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const validation = useAgentValidation();
 
   const stepKey = steps[currentStep].key;
 
@@ -89,9 +86,10 @@ export function OwnerAgentOnboardingForm() {
       category,
       tags,
       externalEndpointUrl: externalEndpointUrl.trim(),
+      profileImageData,
       actions,
     }),
-    [actions, agentName, category, description, externalEndpointUrl, tags]
+    [actions, agentName, category, description, externalEndpointUrl, profileImageData, tags]
   );
 
   function addTag() {
@@ -139,12 +137,14 @@ export function OwnerAgentOnboardingForm() {
     }
 
     if (step === "config") {
-      if (externalEndpointUrl.trim()) {
-        try {
-          new URL(externalEndpointUrl.trim());
-        } catch {
-          return "External endpoint URL must be a valid URL.";
-        }
+      if (!externalEndpointUrl.trim()) {
+        return "External endpoint URL is required.";
+      }
+
+      try {
+        new URL(externalEndpointUrl.trim());
+      } catch {
+        return "External endpoint URL must be a valid URL.";
       }
       return null;
     }
@@ -164,7 +164,13 @@ export function OwnerAgentOnboardingForm() {
   }
 
   async function saveDraft() {
-    await draftMutation.mutateAsync(payload);
+    setIsSavingDraft(true);
+    try {
+      window.localStorage.setItem("agenticbay.owner.agentDraft", JSON.stringify(payload));
+      setPendingNotice("Draft saved locally.");
+    } finally {
+      setIsSavingDraft(false);
+    }
   }
 
   async function nextStep() {
@@ -192,11 +198,31 @@ export function OwnerAgentOnboardingForm() {
       return;
     }
 
-    const response = await endpointCheckMutation.mutateAsync(payload);
-    setEndpointResults(response.results);
-    const failed = response.results.find((result) => !result.ok);
-    if (failed) {
-      setStepError(`Endpoint check failed: ${failed.path} - ${failed.message}`);
+    try {
+      const result = await validation.validate(payload.externalEndpointUrl);
+      const results = endpointChecklist.map((path) => ({
+        path,
+        ok: result.ok,
+        message: result.ok ? "Validated" : "Failed",
+      }));
+      setEndpointResults(results);
+
+      if (!result.ok) {
+        setStepError("Endpoint validation failed. Review the service response and try again.");
+      }
+    } catch (error) {
+      setEndpointResults(
+        endpointChecklist.map((path) => ({
+          path,
+          ok: false,
+          message: "Failed",
+        }))
+      );
+      setStepError(
+        isApiError(error)
+          ? `Endpoint validation failed: ${error.message}`
+          : "Endpoint validation failed."
+      );
     }
   }
 
@@ -213,12 +239,52 @@ export function OwnerAgentOnboardingForm() {
       return;
     }
 
-    const response = await submitMutation.mutateAsync(payload);
-    setPendingNotice(response.notice);
+    setIsSubmitting(true);
+    try {
+      await agentsApi.submit({
+        name: payload.agentName,
+        description: payload.description,
+        base_url: payload.externalEndpointUrl,
+        categories: [payload.category.toLowerCase().replace(/\s+/g, "-")],
+        tags: payload.tags,
+        pricing_summary: Object.fromEntries(
+          payload.actions
+            .filter((row) => row.name.trim())
+            .map((row) => [row.name.trim(), Number(row.priceUsdc)])
+        ),
+        profile_image_data: payload.profileImageData,
+        actions: payload.actions
+          .filter((row) => row.name.trim())
+          .map((row) => ({
+            name: row.name.trim(),
+            description: row.name.trim(),
+            priceUsdc: Number(row.priceUsdc),
+          })),
+      });
+      window.localStorage.removeItem("agenticbay.owner.agentDraft");
+      setPendingNotice("Agent submitted for review.");
+    } catch (error) {
+      setStepError(isApiError(error) ? error.message : "Agent submission failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  const isBusy =
-    draftMutation.isPending || endpointCheckMutation.isPending || submitMutation.isPending;
+  const isBusy = isSavingDraft || validation.isValidating || isSubmitting;
+
+  function handleImageUpload(file: File | undefined) {
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setProfileImageData(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div className="space-y-6">
@@ -320,6 +386,21 @@ export function OwnerAgentOnboardingForm() {
                   </div>
                 ) : null}
               </div>
+
+              <label className="grid gap-2 text-sm">
+                <span className="font-medium text-[var(--text)]">Profile image</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleImageUpload(event.target.files?.[0])}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text)]"
+                />
+                {profileImageData ? (
+                  <span className="text-sm text-emerald-700">
+                    Image attached and will be uploaded with the agent submission.
+                  </span>
+                ) : null}
+              </label>
             </div>
           </div>
         ) : null}
@@ -330,7 +411,7 @@ export function OwnerAgentOnboardingForm() {
 
             <label className="grid gap-2 text-sm">
               <span className="font-medium text-[var(--text)]">
-                External endpoint URL (optional)
+                External endpoint URL
               </span>
               <input
                 value={externalEndpointUrl}
@@ -350,10 +431,10 @@ export function OwnerAgentOnboardingForm() {
                 <button
                   type="button"
                   onClick={runEndpointCheck}
-                  disabled={endpointCheckMutation.isPending}
+                  disabled={validation.isValidating}
                   className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--primary)] px-4 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-60"
                 >
-                  {endpointCheckMutation.isPending ? "Checking..." : "Run endpoint check"}
+                  {validation.isValidating ? "Checking..." : "Validate Endpoints"}
                 </button>
               </div>
               <ul className="mt-3 space-y-2 text-sm text-[var(--text-muted)]">
@@ -471,10 +552,10 @@ export function OwnerAgentOnboardingForm() {
             <button
               type="button"
               onClick={submitForReview}
-              disabled={submitMutation.isPending}
+              disabled={isSubmitting}
               className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-60"
             >
-              {submitMutation.isPending ? "Submitting..." : "Submit for Review"}
+              {isSubmitting ? "Submitting..." : "Submit for Review"}
             </button>
 
             {pendingNotice ? (
@@ -508,7 +589,7 @@ export function OwnerAgentOnboardingForm() {
               disabled={isBusy}
               className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] px-4 text-sm font-medium text-[var(--text)] disabled:opacity-50"
             >
-              {draftMutation.isPending ? "Saving..." : "Save draft"}
+              {isSavingDraft ? "Saving..." : "Save draft"}
             </button>
             <button
               type="button"

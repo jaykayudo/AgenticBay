@@ -17,42 +17,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useState } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useApiQuery } from "@/hooks/useApi";
+import { useAgentSearch } from "@/hooks/useAgentSearch";
 import { apiFetch } from "@/lib/api";
+import type { SearchResponse, SearchResult as MarketplaceSearchResult } from "@/lib/api/marketplace";
 import { cn } from "@/lib/utils";
-
-type MarketplaceSearchResult = {
-  agentSlug: string;
-  agentName: string;
-  description: string;
-  rating: number;
-  jobsCompleted: number;
-  startingPriceUsdc: number;
-  matchPercentage: number;
-  reason: string;
-  primaryAction: {
-    actionId: string;
-    actionName: string;
-    priceUsdc: number;
-    estimatedDurationLabel: string;
-    inputSummary: string;
-    mode: "hire" | "demo";
-  };
-  avatar: {
-    label: string;
-    bg: string;
-    fg: string;
-  };
-};
-
-type MarketplaceSearchResponse = {
-  query: string;
-  generatedAt: string;
-  resultCount: number;
-  orchestratorSuggestion: string;
-  bestMatch: MarketplaceSearchResult | null;
-  results: MarketplaceSearchResult[];
-};
 
 type MarketplaceSessionRead = {
   sessionId: string;
@@ -161,15 +129,18 @@ function MarketplaceSearchResultsContent({ query }: { query: string }) {
   const [searchDraft, setSearchDraft] = useState(query);
   const [pendingAgentSlug, setPendingAgentSlug] = useState<string | null>(null);
 
-  const searchQuery = useApiQuery<MarketplaceSearchResponse>(
-    ["marketplace-search", query],
-    `/marketplace/search?q=${encodeURIComponent(query)}`,
-    {
-      enabled: query.length > 0,
-    }
-  );
+  const searchQuery = useAgentSearch(query);
 
-  const data = searchQuery.data;
+  const data: SearchResponse | null = query
+    ? {
+        query: searchQuery.query,
+        generatedAt: searchQuery.generatedAt ?? "",
+        resultCount: searchQuery.resultCount,
+        orchestratorSuggestion: searchQuery.orchestratorSuggestion ?? "",
+        bestMatch: searchQuery.bestMatch,
+        results: searchQuery.results,
+      }
+    : null;
   const bestMatch = data?.bestMatch ?? null;
   const otherResults =
     data?.results.filter((result) => result.agentSlug !== bestMatch?.agentSlug) ?? [];

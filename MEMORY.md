@@ -324,6 +324,8 @@ Name the file manually to follow the `YYYYMMDD_NN_` convention after autogenerat
 | `DATABASE_URL` | Async PostgreSQL URL (`postgresql+asyncpg://...`) |
 | `DATABASE_URL_SYNC` | Sync PostgreSQL URL (`postgresql+psycopg2://...`) for Alembic |
 | `REDIS_URL` | Redis connection string |
+| `RESEND_API_KEY` | Resend API key for transactional OTP email delivery |
+| `EMAIL_FROM_ADDRESS` | Verified sender address used for OTP emails |
 | `ORCHESTRATOR_WS_URL` | WS base URL for user agent → orchestrator connection |
 | `CIRCLE_API_KEY` | Circle Wallets API key |
 | `CIRCLE_ENTITY_SECRET` | 32-byte hex, registered once with Circle |

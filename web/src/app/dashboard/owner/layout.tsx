@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const navigation = [
@@ -182,7 +183,10 @@ export default function OwnerDashboardLayout({ children }: OwnerDashboardLayoutP
                 </label>
 
                 <div className="hidden xl:block">
-                  <ThemeToggle />
+                  <div className="flex items-center gap-2">
+                    <NotificationsBell />
+                    <ThemeToggle />
+                  </div>
                 </div>
 
                 <Link

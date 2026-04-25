@@ -12,6 +12,7 @@ from app.auth.providers.email_otp import (
     EmailOTPProvider,
 )
 from app.auth.rate_limiter import OTPSendRateLimiter, OTPSendRateLimitError
+from app.core.config import settings
 from app.core.redis import get_redis
 from app.schemas.auth import (
     AuthenticatedUserRead,
@@ -21,6 +22,7 @@ from app.schemas.auth import (
     VerifyOTPRequest,
     VerifyOTPResponse,
 )
+from app.services.email_service import ResendEmailDelivery
 
 router = APIRouter(prefix="/auth/email", tags=["auth"])
 
@@ -37,6 +39,8 @@ def _request_metadata(request: Request) -> tuple[str | None, str | None]:
 
 
 def get_email_delivery() -> EmailDelivery:
+    if settings.RESEND_API_KEY:
+        return ResendEmailDelivery()
     return EmailDelivery()
 
 

@@ -30,9 +30,21 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import useSWR from "swr";
 
 import { useApiQuery } from "@/hooks/useApi";
+import { useJobSession } from "@/hooks/useJobSession";
+import { jobsApi } from "@/lib/api/jobs";
+import { reviewsApi } from "@/lib/api/reviews";
 import { formatUsdc } from "@/lib/marketplace-data";
 import {
   buildMockJobResultPayload,
@@ -188,12 +200,6 @@ const timelineSteps: TimelineStep[] = [
     description: "Funds released",
   },
 ];
-
-function buildSocketUrl(socketUrl: string, sessionToken: string) {
-  const url = new URL(socketUrl);
-  url.searchParams.set("token", sessionToken);
-  return url.toString();
-}
 
 function safeStringify(value: unknown) {
   try {
@@ -652,6 +658,11 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
   );
 
   const session = sessionQuery.data;
+  const realtimeSession = useJobSession(
+    session?.sessionId ?? "",
+    session?.sessionToken ?? "",
+    session?.socketUrl?.startsWith("mock://") ? undefined : session?.socketUrl
+  );
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
   const [sessionStatus, setSessionStatus] = useState<JobStatus>("queued");
   const [paymentState, setPaymentState] = useState<PaymentState>("pending");
@@ -665,13 +676,18 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [composerValue, setComposerValue] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewBody, setReviewBody] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [copied, setCopied] = useState("");
+  const messagesQuery = useSWR(sessionId ? ["/jobs/messages", sessionId] : null, () =>
+    jobsApi.getMessages(sessionId).then((response) => response.data.messages)
+  );
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const socketRef = useRef<WebSocket | null>(null);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectDelayRef = useRef(1000);
   const manualShutdownRef = useRef(false);
   const initializedRef = useRef(false);
   const sessionStartedRef = useRef(false);
@@ -737,8 +753,7 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
         return true;
       }
 
-      const socket = socketRef.current;
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
+      if (realtimeSession.connectionState !== "connected") {
         appendLog(
           `Could not send ${String(payload.type)} because the WebSocket is not open.`,
           "error"
@@ -746,11 +761,11 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
         return false;
       }
 
-      socket.send(JSON.stringify(payload));
+      realtimeSession.sendCommand(String(payload.type), payload.data);
       appendLog(`Sent ${String(payload.type)} to the orchestrator.`);
       return true;
     },
-    [appendLog, session]
+    [appendLog, realtimeSession, session]
   );
 
   const completeMockSession = useCallback(
@@ -1082,7 +1097,85 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
   }, [appendFeed, session]);
 
   useEffect(() => {
-    if (!session?.sessionToken || !session.socketUrl) {
+    if (!session || session.socketUrl.startsWith("mock://")) {
+      return;
+    }
+
+    if (realtimeSession.connectionState === "connected") {
+      setConnectionState("connected");
+    } else if (realtimeSession.connectionState === "reconnecting") {
+      setConnectionState("reconnecting");
+    } else if (realtimeSession.connectionState === "closed") {
+      setConnectionState("disconnected");
+    } else if (realtimeSession.connectionState === "connecting") {
+      setConnectionState("connecting");
+    }
+  }, [realtimeSession.connectionState, session]);
+
+  useEffect(() => {
+    if (
+      !session ||
+      session.socketUrl.startsWith("mock://") ||
+      realtimeSession.connectionState !== "connected" ||
+      sessionStartedRef.current ||
+      session.status !== "queued"
+    ) {
+      return;
+    }
+
+    sessionStartedRef.current = true;
+    realtimeSession.sendCommand("START", {
+      job_session_id: session.sessionId,
+      job_session_auth_token: session.sessionToken,
+      action_id: session.actionId,
+      input_summary: session.inputSummary,
+    });
+  }, [realtimeSession, session]);
+
+  useEffect(() => {
+    if (!session || session.socketUrl.startsWith("mock://") || realtimeSession.feed.length === 0) {
+      return;
+    }
+
+    const latest = realtimeSession.feed[realtimeSession.feed.length - 1];
+    handleIncomingEnvelope({
+      type: latest.type,
+      data: latest.data as Record<string, unknown> | string | null,
+    });
+  }, [handleIncomingEnvelope, realtimeSession.feed, session]);
+
+  useEffect(() => {
+    if (!messagesQuery.data?.length) {
+      return;
+    }
+
+    const messages = messagesQuery.data;
+    startTransition(() => {
+      setFeed((current) => {
+        const existingIds = new Set(current.map((item) => item.id));
+        const fromApi = messages
+          .filter((message) => !existingIds.has(`api-message-${message.id}`))
+          .map<FeedItem>((message) => ({
+            id: `api-message-${message.id}`,
+            kind: message.sender === "user" ? "user" : "orchestrator",
+            type: "MESSAGE",
+            sender:
+              message.sender === "user"
+                ? "user"
+                : message.sender === "agent"
+                  ? "agent"
+                  : "orchestrator",
+            title: message.sender,
+            body: message.body,
+            timestamp: message.createdAt,
+          }));
+        return fromApi.length ? [...fromApi, ...current] : current;
+      });
+    });
+  }, [messagesQuery.data]);
+
+  useEffect(() => {
+    if (!session?.sessionToken || !session.socketUrl || !session.socketUrl.startsWith("mock://")) {
       return;
     }
 
@@ -1178,99 +1271,13 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
       };
     }
 
-    const connect = () => {
-      const nextState = reconnectDelayRef.current > 1000 ? "reconnecting" : "connecting";
-      setConnectionState(nextState);
-      appendLog(
-        nextState === "reconnecting"
-          ? "Attempting to reconnect to orchestration WebSocket."
-          : "Opening orchestration WebSocket using the session token."
-      );
-
-      const ws = new WebSocket(buildSocketUrl(session.socketUrl, session.sessionToken));
-      socketRef.current = ws;
-
-      ws.onopen = () => {
-        if (disposed) {
-          return;
-        }
-
-        reconnectDelayRef.current = 1000;
-        setConnectionState("connected");
-        appendLog("WebSocket connected.");
-
-        if (!sessionStartedRef.current && session.status === "queued") {
-          sessionStartedRef.current = true;
-          sendPayload({
-            type: "START",
-            data: {
-              job_session_id: session.sessionId,
-              job_session_auth_token: session.sessionToken,
-              action_id: session.actionId,
-              input_summary: session.inputSummary,
-            },
-          });
-        }
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          handleIncomingEnvelope(JSON.parse(event.data as string) as OrchestratorEnvelope);
-        } catch {
-          appendFeed({
-            kind: "orchestrator",
-            type: "RAW",
-            sender: "orchestrator",
-            title: "Raw orchestrator message",
-            body: String(event.data),
-            payload: String(event.data),
-          });
-        }
-      };
-
-      ws.onerror = () => {
-        appendLog("WebSocket error detected.", "warning");
-      };
-
-      ws.onclose = () => {
-        if (disposed) {
-          return;
-        }
-
-        setConnectionState("disconnected");
-        appendLog("WebSocket disconnected.", "warning");
-
-        if (!manualShutdownRef.current && !isTerminalStatus(currentStatusRef.current)) {
-          const delay = reconnectDelayRef.current;
-          appendLog(`Scheduling reconnect in ${Math.round(delay / 1000)}s.`, "warning");
-          reconnectTimerRef.current = setTimeout(() => {
-            reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, 30000);
-            connect();
-          }, delay);
-        }
-      };
-    };
-
-    connect();
-
-    return () => {
-      disposed = true;
-      manualShutdownRef.current = true;
-      clearMockTimers();
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-      }
-      socketRef.current?.close();
-    };
   }, [
     appendFeed,
     appendLog,
     clearMockTimers,
-    handleIncomingEnvelope,
     persistMockSession,
     queueMockTimer,
     scheduleMockCompletionFlow,
-    sendPayload,
     session,
   ]);
 
@@ -1491,9 +1498,15 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
     }
   }
 
-  function confirmCancelJob() {
+  async function confirmCancelJob() {
     if (!session) {
       return;
+    }
+
+    try {
+      await jobsApi.cancelJob(session.sessionId);
+    } catch {
+      // Some current sessions are mock-backed; still close the local workspace state.
     }
 
     const sent = sendWorkspaceAction("CLOSE_JOB", {
@@ -1518,6 +1531,25 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
       title: "Cancel requested",
       body: "You asked the orchestrator to stop this job session.",
     });
+  }
+
+  async function submitReview() {
+    if (!session || reviewSubmitting) {
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      await reviewsApi.submit(session.sessionId, {
+        rating: reviewRating,
+        body: reviewBody.trim() || undefined,
+      });
+      setReviewSubmitted(true);
+      setReviewOpen(false);
+      appendLog("Review submitted.");
+    } finally {
+      setReviewSubmitting(false);
+    }
   }
 
   function downloadResult(format: "json" | "txt") {
@@ -1802,6 +1834,15 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                           <ArrowDownToLine className="h-4 w-4" />
                           Text
                         </button>
+                        <button
+                          type="button"
+                          disabled={reviewSubmitted}
+                          onClick={() => setReviewOpen(true)}
+                          className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--primary)] px-4 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-55"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          {reviewSubmitted ? "Reviewed" : "Review"}
+                        </button>
                       </div>
                     </div>
 
@@ -1965,6 +2006,49 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
                 Cancel Job
               </button>
             </div>
+          </div>
+        </Modal>
+      ) : null}
+
+      {reviewOpen ? (
+        <Modal title="Review this agent" onClose={() => setReviewOpen(false)}>
+          <div className="mt-5 space-y-4">
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium text-[var(--text)]">Rating</span>
+              <select
+                value={reviewRating}
+                onChange={(event) => setReviewRating(Number(event.target.value))}
+                className="h-11 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 text-[var(--text)]"
+              >
+                {[5, 4, 3, 2, 1].map((rating) => (
+                  <option key={rating} value={rating}>
+                    {rating} stars
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium text-[var(--text)]">Review</span>
+              <textarea
+                value={reviewBody}
+                onChange={(event) => setReviewBody(event.target.value)}
+                className="min-h-28 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text)]"
+                placeholder="What went well? Anything the agent should improve?"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={reviewSubmitting}
+              onClick={() => void submitReview()}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-55"
+            >
+              {reviewSubmitting ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <MessageSquare className="h-4 w-4" />
+              )}
+              {reviewSubmitting ? "Submitting..." : "Submit review"}
+            </button>
           </div>
         </Modal>
       ) : null}

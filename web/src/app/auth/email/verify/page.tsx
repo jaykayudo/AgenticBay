@@ -1,6 +1,5 @@
 "use client";
 
-import axios, { type AxiosError } from "axios";
 import { ArrowLeft, CheckCircle2, Clock3, Mail, RefreshCcw, ShieldAlert } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, startTransition, useEffect, useEffectEvent, useRef, useState } from "react";
@@ -8,7 +7,8 @@ import type { ClipboardEvent, KeyboardEvent } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { authApiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { isApiError } from "@/lib/api/errors";
 import {
   clearPendingEmailAuth,
   createPendingEmailAuth,
@@ -16,31 +16,11 @@ import {
   savePendingEmailAuth,
 } from "@/lib/pending-email-auth";
 import { cn } from "@/lib/utils";
-import { useAuthStore, type AuthUser } from "@/store/auth-store";
 
 const DIGIT_COUNT = 6;
 const RESEND_SECONDS = 60;
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 const ONE_MINUTE_MS = 60 * 1000;
-
-type VerifyResponse = {
-  access_token: string;
-  refresh_token: string;
-  token_type: "bearer";
-  expires_in: number;
-  user: AuthUser;
-};
-
-type SendOtpResponse = {
-  message: string;
-  expires_in_minutes: number;
-  email: string;
-};
-
-type ApiErrorPayload = {
-  detail?: string;
-  retry_after?: number;
-};
 
 function formatClock(totalSeconds: number, padMinutes = true) {
   const clamped = Math.max(0, totalSeconds);
@@ -57,6 +37,27 @@ function parseAttemptsRemaining(detail: string | undefined) {
 
 function sanitizeDigits(value: string) {
   return value.replace(/\D/g, "");
+}
+
+function getApiErrorDetail(error: unknown, fallback: string) {
+  return isApiError(error) ? error.message : fallback;
+}
+
+function getRetryAfter(error: unknown, fallback: number) {
+  if (!isApiError(error) || !error.details || typeof error.details !== "object") {
+    return fallback;
+  }
+
+  const retryAfter = "retry_after" in error.details ? error.details.retry_after : undefined;
+  return typeof retryAfter === "number" ? retryAfter : fallback;
+}
+
+function normalizeRedirectAfter(value: string | null) {
+  if (!value?.startsWith("/") || value.startsWith("//")) {
+    return null;
+  }
+
+  return value;
 }
 
 function getInitialEmailState(emailFromQuery: string) {
@@ -100,12 +101,12 @@ function EmailOtpVerificationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailFromQuery = searchParams.get("email")?.trim().toLowerCase() ?? "";
+  const redirectAfter = normalizeRedirectAfter(searchParams.get("redirect_after"));
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const autoSubmitLockRef = useRef(false);
   const initialEmailState = getInitialEmailState(emailFromQuery);
 
-  const hydrate = useAuthStore((state) => state.hydrate);
-  const setSession = useAuthStore((state) => state.setSession);
+  const { hydrate, sendEmailOtp, verifyEmailOtp } = useAuth();
 
   const [email, setEmail] = useState(initialEmailState.email);
   const [digits, setDigits] = useState<string[]>(() =>
@@ -231,16 +232,7 @@ function EmailOtpVerificationContent() {
     setResendError(null);
 
     try {
-      const response = await authApiFetch<VerifyResponse>("/auth/email/verify-otp", {
-        method: "post",
-        data: { email, code },
-      });
-
-      setSession({
-        accessToken: response.access_token,
-        refreshToken: response.refresh_token,
-        user: response.user,
-      });
+      const response = await verifyEmailOtp(email, code);
       clearPendingEmailAuth();
       toast.success("Code verified. Welcome back.");
 
@@ -248,15 +240,11 @@ function EmailOtpVerificationContent() {
         if (response.user.is_new_user) {
           router.push("/profile/complete");
         } else {
-          router.push("/dashboard");
+          router.push(redirectAfter ?? "/dashboard");
         }
       });
     } catch (error) {
-      const apiError = error as AxiosError<ApiErrorPayload>;
-      const detail =
-        axios.isAxiosError(apiError) && apiError.response?.data?.detail
-          ? apiError.response.data.detail
-          : "We couldn't verify that code. Please try again.";
+      const detail = getApiErrorDetail(error, "We couldn't verify that code. Please try again.");
 
       const nextAttemptsRemaining = parseAttemptsRemaining(detail);
       if (detail.toLowerCase().includes("expired")) {
@@ -356,10 +344,7 @@ function EmailOtpVerificationContent() {
     setStatusMessage(null);
 
     try {
-      const response = await authApiFetch<SendOtpResponse>("/auth/email/send-otp", {
-        method: "post",
-        data: { email },
-      });
+      const response = await sendEmailOtp(email);
       const nextState = createPendingEmailAuth(response.email);
       setEmail(response.email);
       setDigits(Array.from({ length: DIGIT_COUNT }, () => ""));
@@ -373,15 +358,8 @@ function EmailOtpVerificationContent() {
       toast.success("New code sent.");
       window.requestAnimationFrame(() => focusIndex(0));
     } catch (error) {
-      const apiError = error as AxiosError<ApiErrorPayload>;
-      const retryAfter =
-        axios.isAxiosError(apiError) && apiError.response?.data?.retry_after
-          ? apiError.response.data.retry_after
-          : RESEND_SECONDS;
-      const detail =
-        axios.isAxiosError(apiError) && apiError.response?.data?.detail
-          ? apiError.response.data.detail
-          : "We couldn't resend the code right now.";
+      const retryAfter = getRetryAfter(error, RESEND_SECONDS);
+      const detail = getApiErrorDetail(error, "We couldn't resend the code right now.");
 
       const nextAvailableAt = Date.now() + retryAfter * 1000;
       setResendAvailableAt(nextAvailableAt);

@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Bot,
   Code2,
@@ -9,6 +11,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+
+import { useMarketplaceCategories } from "@/hooks/useMarketplaceAgents";
 
 const categories = [
   { slug: "research", label: "Research", icon: Search, description: "Market analysis & insights" },
@@ -51,7 +55,12 @@ const categories = [
   },
 ];
 
+const iconBySlug = Object.fromEntries(categories.map((category) => [category.slug, category.icon]));
+
 export function CategoriesSection() {
+  const { categories: apiCategories } = useMarketplaceCategories();
+  const visibleCategories = apiCategories.length > 0 ? apiCategories : categories;
+
   return (
     <section className="landing-section" id="categories">
       <div className="mx-auto max-w-[var(--layout-max)] px-4 md:px-6 xl:px-8">
@@ -69,8 +78,8 @@ export function CategoriesSection() {
         </div>
 
         <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:gap-5">
-          {categories.map((category) => {
-            const Icon = category.icon;
+          {visibleCategories.map((category) => {
+            const Icon = iconBySlug[category.slug] ?? Bot;
             return (
               <Link
                 key={category.slug}

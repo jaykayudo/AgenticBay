@@ -1,6 +1,5 @@
 "use client";
 
-import axios, { type AxiosError } from "axios";
 import { Command, LoaderCircle, LockKeyhole, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,42 +8,16 @@ import type { FormEvent, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { authApiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { isApiError } from "@/lib/api/errors";
 import { createPendingEmailAuth, savePendingEmailAuth } from "@/lib/pending-email-auth";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/store/auth-store";
 
 const MARKETPLACE_NAME = process.env.NEXT_PUBLIC_MARKETPLACE_NAME ?? "Agentic Bay";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type AuthMethod = "google" | "facebook" | "email" | null;
 type OAuthProvider = Exclude<AuthMethod, "email" | null>;
-
-type OAuthAuthorizationURLResponse = {
-  auth_url: string;
-};
-
-type SendOtpResponse = {
-  message: string;
-  expires_in_minutes: number;
-  email: string;
-};
-
-type UserProfileResponse = {
-  id: string;
-  email: string;
-  display_name: string | null;
-  role: string;
-  email_verified: boolean;
-  auth_provider: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-type ApiErrorPayload = {
-  detail?: string;
-};
 
 function GoogleIcon() {
   return (
@@ -166,11 +139,17 @@ function formatCallbackError(error: string | null, description: string | null) {
   return errorMessages[error] ?? "Something interrupted authentication. Please try again.";
 }
 
-function getApiErrorMessage(error: unknown, fallback: string) {
-  const apiError = error as AxiosError<ApiErrorPayload>;
+function normalizeRedirectAfter(value: string | null) {
+  if (!value?.startsWith("/") || value.startsWith("//")) {
+    return null;
+  }
 
-  if (axios.isAxiosError(apiError) && apiError.response?.data?.detail) {
-    return apiError.response.data.detail;
+  return value;
+}
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (isApiError(error)) {
+    return error.message;
   }
 
   return fallback;
@@ -179,11 +158,17 @@ function getApiErrorMessage(error: unknown, fallback: string) {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const hydrate = useAuthStore((state) => state.hydrate);
-  const hydrated = useAuthStore((state) => state.hydrated);
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const clearSession = useAuthStore((state) => state.clearSession);
-  const user = useAuthStore((state) => state.user);
+  const {
+    accessToken,
+    clearSession,
+    hydrated,
+    hydrate,
+    loadMe,
+    sendEmailOtp,
+    signInWithFacebook,
+    signInWithGoogle,
+    user,
+  } = useAuth();
 
   const [email, setEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
@@ -200,6 +185,10 @@ function LoginContent() {
   const showEmailValidation = emailTouched && emailHasValue && !emailIsValid;
   const callbackError = useMemo(
     () => formatCallbackError(searchParams.get("error"), searchParams.get("error_description")),
+    [searchParams]
+  );
+  const redirectAfter = useMemo(
+    () => normalizeRedirectAfter(searchParams.get("redirect_after")),
     [searchParams]
   );
   const displayedError = submissionError ?? (dismissedCallbackError ? null : callbackError);
@@ -230,12 +219,7 @@ function LoginContent() {
       }
 
       try {
-        await authApiFetch<UserProfileResponse>("/auth/me", {
-          method: "get",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        await loadMe();
 
         if (cancelled) {
           return;
@@ -243,7 +227,7 @@ function LoginContent() {
 
         setSessionCheckState("authenticated");
         startTransition(() => {
-          router.replace("/dashboard");
+          router.replace(redirectAfter ?? "/dashboard");
         });
       } catch {
         if (cancelled) {
@@ -260,7 +244,7 @@ function LoginContent() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, clearSession, hydrated, router, user]);
+  }, [accessToken, clearSession, hydrated, loadMe, redirectAfter, router, user]);
 
   const dismissErrors = () => {
     setSubmissionError(null);
@@ -272,15 +256,11 @@ function LoginContent() {
     setActiveMethod(provider);
 
     try {
-      const response = await authApiFetch<OAuthAuthorizationURLResponse>(`/auth/${provider}`, {
-        method: "get",
-      });
-
-      if (!response.auth_url) {
-        throw new Error("Missing auth URL.");
+      if (provider === "google") {
+        await signInWithGoogle();
+      } else {
+        await signInWithFacebook();
       }
-
-      window.location.assign(response.auth_url);
     } catch (error) {
       setSubmissionError(
         getApiErrorMessage(error, `We couldn't start ${provider} sign-in. Please try again.`)
@@ -301,15 +281,17 @@ function LoginContent() {
     setActiveMethod("email");
 
     try {
-      const response = await authApiFetch<SendOtpResponse>("/auth/email/send-otp", {
-        method: "post",
-        data: { email: normalizedEmail },
-      });
+      const response = await sendEmailOtp(normalizedEmail);
       const pendingState = createPendingEmailAuth(response.email);
       savePendingEmailAuth(pendingState);
 
       startTransition(() => {
-        router.push(`/auth/email/verify?email=${encodeURIComponent(response.email)}`);
+        const verifyUrl = new URL("/auth/email/verify", window.location.origin);
+        verifyUrl.searchParams.set("email", response.email);
+        if (redirectAfter) {
+          verifyUrl.searchParams.set("redirect_after", redirectAfter);
+        }
+        router.push(`${verifyUrl.pathname}${verifyUrl.search}`);
       });
     } catch (error) {
       setSubmissionError(
