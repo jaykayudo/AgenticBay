@@ -3,10 +3,11 @@ from __future__ import annotations
 import enum
 import secrets
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -101,6 +102,14 @@ class Agent(BaseModel):
     pricing_summary: Mapped[dict[str, Any]] = mapped_column(
         JSONB, default=dict, server_default="{}", nullable=False
     )
+
+    # Health tracking — updated by background health check task
+    last_health_check_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_health_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    consecutive_health_failures: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    agent_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Denormalized stats — updated by background jobs, not on every request
     total_jobs: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

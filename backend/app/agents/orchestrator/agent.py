@@ -72,6 +72,9 @@ class OrchestratorAgent:
         self.invoice_svc = InvoiceService()
         self.llm = OrchestratorLLM()
         self.http_timeout = aiohttp.ClientTimeout(total=30)
+        from app.services.health_client import AgentHealthClient
+
+        self._health_client = AgentHealthClient()
 
     # ──────────────────────────────────────────
     # ENTRY POINT: user agent messages
@@ -223,6 +226,25 @@ class OrchestratorAgent:
                     type="ERROR",
                     data=ErrorResponseData(
                         error_type="not_found_error", message=f"Agent {agent_id} not found"
+                    ),
+                ).to_text()
+            )
+            return
+
+        # Pre-connect health check — catches agents that went down after search
+        health = await self._health_client.check(agent.base_url)
+        await self._health_client.set_cached(str(agent.id), health, 0 if health.healthy else 1)
+        if not health.healthy or not health.ready:
+            await send(
+                ErrorResponse(
+                    type="ERROR",
+                    data=ErrorResponseData(
+                        error_type="agent_unavailable",
+                        message=(
+                            "The selected agent is currently unavailable "
+                            f"({health.reason or health.status}). "
+                            "Please choose a different agent."
+                        ),
                     ),
                 ).to_text()
             )
