@@ -11,8 +11,8 @@ export default function OwnerNewAgentPage() {
           List a new service agent
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--text-muted)]">
-          Complete the 4-step onboarding flow to submit your agent for review. Drafts can be saved and
-          required endpoint checks must pass before activation review begins.
+          Complete the 4-step onboarding flow to submit your agent for review. Drafts can be saved
+          and required endpoint checks must pass before activation review begins.
         </p>
       </section>
 

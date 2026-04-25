@@ -11,11 +11,11 @@ from app.core.database import asyncpg_connection
 
 class VectorSearch:
     def __init__(self) -> None:
-        self._vo: voyageai.AsyncClient | None = None  # type: ignore[attr-defined]
+        self._vo: Any | None = None
 
-    def _client(self) -> voyageai.AsyncClient:  # type: ignore[attr-defined]
+    def _client(self) -> Any:
         if self._vo is None:
-            self._vo = voyageai.AsyncClient()  # type: ignore[attr-defined]
+            self._vo = getattr(voyageai, "AsyncClient")()
         return self._vo
 
     # ──────────────────────────────────────────

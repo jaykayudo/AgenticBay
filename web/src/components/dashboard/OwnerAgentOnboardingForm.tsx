@@ -47,11 +47,7 @@ const categories = [
   "Content",
 ];
 
-const endpointChecklist = [
-  "GET /capabilities",
-  "POST /connect",
-  "WS /ws/service/{session_id}",
-];
+const endpointChecklist = ["GET /capabilities", "POST /connect", "WS /ws/service/{session_id}"];
 
 function createActionRow(): ActionRow {
   return {
@@ -60,7 +56,6 @@ function createActionRow(): ActionRow {
     priceUsdc: "",
   };
 }
-
 
 export function OwnerAgentOnboardingForm() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -124,7 +119,9 @@ export function OwnerAgentOnboardingForm() {
   }
 
   function removeAction(id: string) {
-    setActions((current) => (current.length <= 1 ? current : current.filter((row) => row.id !== id)));
+    setActions((current) =>
+      current.length <= 1 ? current : current.filter((row) => row.id !== id)
+    );
   }
 
   function validateStep(step: StepKey) {
@@ -154,7 +151,8 @@ export function OwnerAgentOnboardingForm() {
 
     if (step === "price") {
       const valid = actions.filter(
-        (row) => row.name.trim() && Number.isFinite(Number(row.priceUsdc)) && Number(row.priceUsdc) > 0
+        (row) =>
+          row.name.trim() && Number.isFinite(Number(row.priceUsdc)) && Number(row.priceUsdc) > 0
       );
       if (valid.length === 0) {
         return "Add at least one action with a positive USDC price.";
@@ -219,7 +217,8 @@ export function OwnerAgentOnboardingForm() {
     setPendingNotice(response.notice);
   }
 
-  const isBusy = draftMutation.isPending || endpointCheckMutation.isPending || submitMutation.isPending;
+  const isBusy =
+    draftMutation.isPending || endpointCheckMutation.isPending || submitMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -330,7 +329,9 @@ export function OwnerAgentOnboardingForm() {
             <h2 className="text-lg font-semibold text-[var(--text)]">Configuration</h2>
 
             <label className="grid gap-2 text-sm">
-              <span className="font-medium text-[var(--text)]">External endpoint URL (optional)</span>
+              <span className="font-medium text-[var(--text)]">
+                External endpoint URL (optional)
+              </span>
               <input
                 value={externalEndpointUrl}
                 onChange={(event) => setExternalEndpointUrl(event.target.value)}
@@ -368,7 +369,11 @@ export function OwnerAgentOnboardingForm() {
                             result.ok ? "text-emerald-700" : "text-rose-700"
                           )}
                         >
-                          {result.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                          {result.ok ? (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                          )}
                           {result.message}
                         </span>
                       ) : (
@@ -388,7 +393,10 @@ export function OwnerAgentOnboardingForm() {
 
             <div className="space-y-3">
               {actions.map((row) => (
-                <div key={row.id} className="grid gap-2 rounded-2xl border border-[var(--border)] p-3 sm:grid-cols-[1fr_160px_auto]">
+                <div
+                  key={row.id}
+                  className="grid gap-2 rounded-2xl border border-[var(--border)] p-3 sm:grid-cols-[1fr_160px_auto]"
+                >
                   <input
                     value={row.name}
                     onChange={(event) => updateAction(row.id, { name: event.target.value })}
@@ -430,16 +438,24 @@ export function OwnerAgentOnboardingForm() {
             <h2 className="text-lg font-semibold text-[var(--text)]">Review</h2>
             <div className="grid gap-4 text-sm sm:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] p-4">
-                <p className="text-xs tracking-[0.16em] text-[var(--text-muted)] uppercase">Agent</p>
+                <p className="text-xs tracking-[0.16em] text-[var(--text-muted)] uppercase">
+                  Agent
+                </p>
                 <p className="mt-2 font-medium text-[var(--text)]">{agentName || "-"}</p>
-                <p className="mt-1 text-[var(--text-muted)]">{category || "No category selected"}</p>
+                <p className="mt-1 text-[var(--text-muted)]">
+                  {category || "No category selected"}
+                </p>
               </div>
               <div className="rounded-2xl border border-[var(--border)] p-4 sm:col-span-2">
-                <p className="text-xs tracking-[0.16em] text-[var(--text-muted)] uppercase">Description</p>
+                <p className="text-xs tracking-[0.16em] text-[var(--text-muted)] uppercase">
+                  Description
+                </p>
                 <p className="mt-2 text-[var(--text)]">{description || "-"}</p>
               </div>
               <div className="rounded-2xl border border-[var(--border)] p-4 sm:col-span-2">
-                <p className="text-xs tracking-[0.16em] text-[var(--text-muted)] uppercase">Actions</p>
+                <p className="text-xs tracking-[0.16em] text-[var(--text-muted)] uppercase">
+                  Actions
+                </p>
                 <ul className="mt-2 space-y-1">
                   {actions
                     .filter((row) => row.name.trim())

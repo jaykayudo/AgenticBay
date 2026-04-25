@@ -248,7 +248,7 @@ class WalletService:
 
         local_tx = await self._find_transaction_for_webhook(
             circle_id=circle_id,
-            tx_hash=tx_hash,
+            tx_hash=tx_hash or "",
             source_address=source_address,
             destination_address=destination_address,
             amount=amount,

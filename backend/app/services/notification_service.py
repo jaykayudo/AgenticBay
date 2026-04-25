@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import WebSocket
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.notifications import Notification, NotificationType
@@ -144,12 +144,18 @@ class NotificationService:
 
     async def mark_all_read(self, user: User) -> int:
         result = await self.db.execute(
-            update(Notification)
-            .where(Notification.user_id == user.id, Notification.is_read.is_(False))
-            .values(is_read=True, read_at=datetime.now(UTC))
+            select(Notification).where(
+                Notification.user_id == user.id,
+                Notification.is_read.is_(False),
+            )
         )
+        notifications = list(result.scalars().all())
+        now = datetime.now(UTC)
+        for notification in notifications:
+            notification.is_read = True
+            notification.read_at = now
         await self.db.commit()
-        return int(result.rowcount or 0)
+        return len(notifications)
 
     async def delete_notification(self, user: User, notification_id: uuid.UUID) -> None:
         notification = await self.db.get(Notification, notification_id)
