@@ -50,9 +50,16 @@ JWT_SECRET=another-random-string
 # Build images and start all services
 make up-build
 
-# Or, to also spin up a local Postgres container (no Supabase needed):
+# Or, to also spin up a local Postgres container 
 make up-local-db    # starts Postgres only
 make up-build       # then starts backend + web
+```
+
+or 
+
+```bash
+# Run the full startup
+./start.sh
 ```
 
 ### 3. Run migrations
