@@ -28,16 +28,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.agents.orchestrator.schema import (
+    ServicePaymentRequest,
+    ServicePaymentRequestData,
+    SessionPhase,
+)
 from tests.test_orchestrator_agent.conftest import (
     FakeSend,
     FakeSessionStore,
     build_orchestrator,
     make_state,
-)
-from app.agents.orchestrator.schema import (
-    ServicePaymentRequest,
-    ServicePaymentRequestData,
-    SessionPhase,
 )
 
 pytestmark = [pytest.mark.asyncio]
@@ -63,7 +63,9 @@ def _make_wallet_mock(address: str = "0xESCROW_WALLET") -> MagicMock:
     return w
 
 
-def _payment_request(amount: str = "25.0", description: str = "job fee", address: str | None = None) -> ServicePaymentRequest:
+def _payment_request(
+    amount: str = "25.0", description: str = "job fee", address: str | None = None
+) -> ServicePaymentRequest:
     return ServicePaymentRequest(
         type="PAYMENT",
         data=ServicePaymentRequestData(amount=amount, description=description, address=address),
@@ -217,9 +219,7 @@ async def test_payment_request_falls_back_to_state_wallet_when_no_service_addres
 
     # No address in the service payment → falls back to state.agent_wallet_address
     with patch("app.agents.orchestrator.agent.session_manager"):
-        await orch._handle_payment_request(
-            state, _payment_request(address=None), send
-        )
+        await orch._handle_payment_request(state, _payment_request(address=None), send)
 
     call_kwargs = orch.invoice_svc.create_invoice.call_args.kwargs
     assert call_kwargs["payee_wallet_address"] == "0xSTATE_WALLET"
@@ -453,7 +453,10 @@ async def test_payment_successful_confirm_fails_returns_payment_error() -> None:
 
     errors = send.of_type("ERROR")
     assert errors[0]["data"]["error_type"] == "payment_error"
-    assert "escrow" in errors[0]["data"]["message"].lower() or "not yet" in errors[0]["data"]["message"].lower()
+    assert (
+        "escrow" in errors[0]["data"]["message"].lower()
+        or "not yet" in errors[0]["data"]["message"].lower()
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -536,9 +539,7 @@ async def test_close_with_paid_invoices_calls_disburse() -> None:
         raw = json.dumps({"type": "CLOSE", "data": None})
         await orch.handle_message(state.session_id, raw, send)
 
-    orch.invoice_svc.disburse_session_invoices.assert_called_once_with(
-        session_id=state.session_id
-    )
+    orch.invoice_svc.disburse_session_invoices.assert_called_once_with(session_id=state.session_id)
 
 
 async def test_close_notifies_service_with_payment_transferred_when_connected() -> None:

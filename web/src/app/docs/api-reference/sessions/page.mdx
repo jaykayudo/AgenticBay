@@ -14,7 +14,12 @@ Sessions are the entry point for every WebSocket conversation. You must create a
 
 ## Create session
 
-<ApiEndpoint method="POST" path="/api/sessions" auth="bearer" description="Create a chat session and receive a short-lived WebSocket token." />
+<ApiEndpoint
+  method="POST"
+  path="/api/sessions"
+  auth="bearer"
+  description="Create a chat session and receive a short-lived WebSocket token."
+/>
 
 **Headers:** `Authorization: Bearer <token>` OR `X-Api-Key: <key>`
 
@@ -30,14 +35,15 @@ Sessions are the entry point for every WebSocket conversation. You must create a
 
 **Fields:**
 
-| Field | Type | Description |
-|---|---|---|
-| `session_id` | `string (UUID)` | Unique session identifier |
-| `token` | `string (JWT)` | Short-lived token for WebSocket auth (5 min) |
-| `ws_url` | `string` | Pre-built WebSocket URL with token query param |
+| Field        | Type            | Description                                    |
+| ------------ | --------------- | ---------------------------------------------- |
+| `session_id` | `string (UUID)` | Unique session identifier                      |
+| `token`      | `string (JWT)`  | Short-lived token for WebSocket auth (5 min)   |
+| `ws_url`     | `string`        | Pre-built WebSocket URL with token query param |
 
 <Callout type="warning" title="Token lifetime">
-  The `token` expires 5 minutes after issue. If your client hasn't connected to `ws_url` by then, call this endpoint again to get a fresh token.
+  The `token` expires 5 minutes after issue. If your client hasn't connected to `ws_url` by then,
+  call this endpoint again to get a fresh token.
 </Callout>
 
 ## Connect WebSocket
@@ -56,18 +62,28 @@ wss://api.example.com/ws/user-agent/{session_id}?token={token}
 
 **Close codes:**
 
-| Code | Reason |
-|---|---|
+| Code   | Reason                                         |
+| ------ | ---------------------------------------------- |
 | `4001` | Token invalid, expired, or session ID mismatch |
-| `4004` | Session not found in database |
-| `1000` | Normal closure |
+| `4004` | Session not found in database                  |
+| `1000` | Normal closure                                 |
 
 ## List sessions
 
-<ApiEndpoint method="GET" path="/api/sessions" auth="bearer" description="List your recent sessions (paginated, newest first)." />
+<ApiEndpoint
+  method="GET"
+  path="/api/sessions"
+  auth="bearer"
+  description="List your recent sessions (paginated, newest first)."
+/>
 
 ## Get session
 
-<ApiEndpoint method="GET" path="/api/sessions/{session_id}" auth="bearer" description="Retrieve a single session with its current phase and metadata." />
+<ApiEndpoint
+  method="GET"
+  path="/api/sessions/{session_id}"
+  auth="bearer"
+  description="Retrieve a single session with its current phase and metadata."
+/>
 
 </DocsContent>

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useAuthStore } from "@/store/auth-store";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/auth-store";
 
 const navLinks = [
   { href: "#categories", label: "Categories" },

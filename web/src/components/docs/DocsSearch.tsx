@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
 import { Search, X } from "lucide-react";
+import Link from "next/link";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 import { docsNav } from "@/lib/docs/nav";
 
@@ -14,9 +14,7 @@ export function DocsSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const results = query
-    ? allItems.filter((item) =>
-        item.title.toLowerCase().includes(query.toLowerCase()),
-      )
+    ? allItems.filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
     : [];
 
   const openSearch = useCallback(() => {

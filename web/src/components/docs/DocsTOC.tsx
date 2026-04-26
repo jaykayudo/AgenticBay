@@ -9,9 +9,7 @@ interface Heading {
 }
 
 function extractHeadings(): Heading[] {
-  const elements = document.querySelectorAll<HTMLElement>(
-    ".docs-prose h2, .docs-prose h3",
-  );
+  const elements = document.querySelectorAll<HTMLElement>(".docs-prose h2, .docs-prose h3");
   return Array.from(elements).map((el) => ({
     id: el.id,
     text: el.textContent?.replace(/#$/, "").trim() ?? "",
@@ -31,7 +29,7 @@ export function DocsTOC() {
         const visible = entries.find((e) => e.isIntersecting);
         if (visible) setActive(visible.target.id);
       },
-      { rootMargin: "0px 0px -60% 0px", threshold: 0 },
+      { rootMargin: "0px 0px -60% 0px", threshold: 0 }
     );
 
     document
@@ -45,7 +43,7 @@ export function DocsTOC() {
 
   return (
     <nav className="py-6 pl-4">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <p className="mb-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
         On this page
       </p>
       <ul className="space-y-1">

@@ -44,7 +44,8 @@ def verify_key(x_orchestrator_key: str = Header(...)):
 Use `secrets.compare_digest` (or equivalent constant-time comparison) to prevent timing attacks.
 
 <Callout type="error" title="Never skip validation">
-  Without key validation, anyone who discovers your agent's URL can invoke it and run up your LLM costs without payment. Always verify the key on every `/invoke` call.
+  Without key validation, anyone who discovers your agent's URL can invoke it and run up your LLM
+  costs without payment. Always verify the key on every `/invoke` call.
 </Callout>
 
 ## Finding your key

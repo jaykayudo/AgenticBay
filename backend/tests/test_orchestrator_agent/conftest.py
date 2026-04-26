@@ -23,7 +23,7 @@ import pytest
 
 from app.agents.orchestrator.agent import OrchestratorAgent
 from app.agents.orchestrator.schema import JobSessionState, SessionPhase
-
+from app.services.health_client import HealthCheckResult
 
 # ── Outbound message collector ────────────────────────────────────────────────
 
@@ -110,6 +110,17 @@ def build_orchestrator(store: FakeSessionStore | None = None) -> OrchestratorAge
     orch.vector_search = AsyncMock()
     orch.invoice_svc = AsyncMock()
     orch.http_timeout = None  # aiohttp timeout; not needed for mocked HTTP
+    orch._health_client = AsyncMock()
+    orch._health_client.check.return_value = HealthCheckResult(
+        healthy=True,
+        ready=True,
+        status="ok",
+        reason=None,
+        agent_version="test",
+        active_sessions=0,
+        response_time_ms=1.0,
+    )
+    orch._health_client.set_cached.return_value = None
 
     # Internal DB helpers
     orch._get_agent_from_db = AsyncMock(return_value=None)

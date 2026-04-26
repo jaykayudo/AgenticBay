@@ -347,7 +347,10 @@ export function WalletManagementPage() {
   const walletAddress = wallet.address;
   const availableBalanceUsdc = wallet.balance;
   const usdEquivalent = availableBalanceUsdc * USD_RATE;
-  const lockedInEscrowUsdc = escrowQuery.active.reduce((total, item) => total + item.lockedAmount, 0);
+  const lockedInEscrowUsdc = escrowQuery.active.reduce(
+    (total, item) => total + item.lockedAmount,
+    0
+  );
 
   const activity = useMemo<WalletActivityResponse>(() => {
     if (activeTab === "transactions") {
@@ -383,7 +386,10 @@ export function WalletManagementPage() {
               : typeof item.txMetadata.agent_name === "string"
                 ? item.txMetadata.agent_name
                 : undefined,
-          counterparty: item.direction === "inbound" ? item.fromAddress ?? undefined : item.toAddress ?? undefined,
+          counterparty:
+            item.direction === "inbound"
+              ? (item.fromAddress ?? undefined)
+              : (item.toAddress ?? undefined),
         })),
       };
     }
@@ -428,10 +434,11 @@ export function WalletManagementPage() {
           typeof item.txMetadata.agentName === "string"
             ? item.txMetadata.agentName
             : "Agent earnings",
-        sourceJobId:
-          typeof item.txMetadata.jobId === "string" ? item.txMetadata.jobId : item.id,
+        sourceJobId: typeof item.txMetadata.jobId === "string" ? item.txMetadata.jobId : item.id,
         sourceJobTitle:
-          typeof item.txMetadata.jobTitle === "string" ? item.txMetadata.jobTitle : "Marketplace job",
+          typeof item.txMetadata.jobTitle === "string"
+            ? item.txMetadata.jobTitle
+            : "Marketplace job",
         amountUsdc: item.amount,
         timestamp: item.createdAt,
         status: item.status === "completed" ? "paid" : "pending",
@@ -494,11 +501,11 @@ export function WalletManagementPage() {
   }
 
   function closeWithdrawModal() {
-      setModal(null);
-      setWithdrawConfirmed(false);
-      setWithdrawAddress("");
-      setWithdrawAmount("");
-      setWithdrawError(null);
+    setModal(null);
+    setWithdrawConfirmed(false);
+    setWithdrawAddress("");
+    setWithdrawAmount("");
+    setWithdrawError(null);
   }
 
   return (
@@ -550,14 +557,13 @@ export function WalletManagementPage() {
                 <span className="pb-1 text-sm font-semibold text-[var(--text-muted)]">USDC</span>
               </div>
               <p className="mt-3 text-sm text-[var(--text-muted)]">
-                {wallet.isLoading ? "Loading USD equivalent" : `${formatUsd(usdEquivalent)} USD equivalent`}
+                {wallet.isLoading
+                  ? "Loading USD equivalent"
+                  : `${formatUsd(usdEquivalent)} USD equivalent`}
               </p>
             </div>
 
-            <span
-              className="app-status-badge"
-              data-tone={wallet.error ? "danger" : "accent"}
-            >
+            <span className="app-status-badge" data-tone={wallet.error ? "danger" : "accent"}>
               Circle {wallet.error ? "sync issue" : "live"}
             </span>
           </div>

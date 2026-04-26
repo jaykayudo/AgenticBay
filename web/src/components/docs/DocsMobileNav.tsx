@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Menu, X, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, BookOpen } from "lucide-react";
+import { useState } from "react";
 
 import { docsNav } from "@/lib/docs/nav";
 
@@ -23,10 +23,7 @@ export function DocsMobileNav() {
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-background p-6 shadow-xl">
             <div className="mb-6 flex items-center justify-between">
               <Link href="/docs" className="flex items-center gap-2 font-semibold">
@@ -40,7 +37,7 @@ export function DocsMobileNav() {
             <nav>
               {docsNav.map((group) => (
                 <div key={group.title} className="mb-6">
-                  <p className="mb-1 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1 px-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                     {group.title}
                   </p>
                   <ul className="space-y-0.5">

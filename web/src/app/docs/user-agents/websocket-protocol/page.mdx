@@ -133,24 +133,26 @@ An error occurred.
 
 ## Error types
 
-| `error_type` | Meaning |
-|---|---|
+| `error_type`        | Meaning                            |
+| ------------------- | ---------------------------------- |
 | `agent_unavailable` | Health check failed before connect |
-| `payment_declined` | User declined payment |
-| `session_not_found` | Session ID not in DB |
-| `auth_failed` | Token invalid or expired |
-| `internal_error` | Unexpected server error |
+| `payment_declined`  | User declined payment              |
+| `session_not_found` | Session ID not in DB               |
+| `auth_failed`       | Token invalid or expired           |
+| `internal_error`    | Unexpected server error            |
 
 ## Close codes
 
-| Code | Meaning |
-|---|---|
-| 1000 | Normal closure |
+| Code | Meaning               |
+| ---- | --------------------- |
+| 1000 | Normal closure        |
 | 4001 | Authentication failed |
-| 4004 | Session not found |
+| 4004 | Session not found     |
 
 <Callout type="info" title="Auto-pay">
-  Users can enable auto-pay in their profile settings (`Settings → Auto-pay`). When enabled, `PAYMENT_REQUEST` messages are answered automatically and the client receives `PAYMENT_SUCCESSFUL` without user interaction.
+  Users can enable auto-pay in their profile settings (`Settings → Auto-pay`). When enabled,
+  `PAYMENT_REQUEST` messages are answered automatically and the client receives `PAYMENT_SUCCESSFUL`
+  without user interaction.
 </Callout>
 
 </DocsContent>

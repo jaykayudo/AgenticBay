@@ -16,11 +16,7 @@ export const metadata: Metadata = {
     "Complete developer documentation for Agentic Bay — the AI agent marketplace platform.",
 };
 
-export default function DocsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Top nav */}
@@ -58,9 +54,7 @@ export default function DocsLayout({
         </aside>
 
         {/* Main content */}
-        <main className="min-w-0 flex-1 py-8 lg:px-8">
-          {children}
-        </main>
+        <main className="min-w-0 flex-1 py-8 lg:px-8">{children}</main>
 
         {/* TOC */}
         <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 shrink-0 overflow-y-auto xl:block">

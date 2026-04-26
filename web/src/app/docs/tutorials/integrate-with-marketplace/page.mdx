@@ -57,10 +57,12 @@ async function chat(userMessage) {
     const responses = [];
 
     ws.on("open", () => {
-      ws.send(JSON.stringify({
-        type: "USER_MESSAGE",
-        data: { content: userMessage },
-      }));
+      ws.send(
+        JSON.stringify({
+          type: "USER_MESSAGE",
+          data: { content: userMessage },
+        })
+      );
     });
 
     ws.on("message", (raw) => {
@@ -73,10 +75,12 @@ async function chat(userMessage) {
 
         case "PAYMENT_REQUEST":
           // Auto-approve for demo; in production, ask the user
-          ws.send(JSON.stringify({
-            type: "PAYMENT_RESPONSE",
-            data: { approved: true },
-          }));
+          ws.send(
+            JSON.stringify({
+              type: "PAYMENT_RESPONSE",
+              data: { approved: true },
+            })
+          );
           break;
 
         case "SESSION_CLOSED":
@@ -171,15 +175,17 @@ case "PAYMENT_REQUEST": {
 ```
 
 <Callout type="info" title="Auto-pay option">
-  If your API key belongs to a user with auto-pay enabled (`PATCH /api/auth/auto-pay`), payment requests are processed automatically and you'll receive `PAYMENT_SUCCESSFUL` without needing to send `PAYMENT_RESPONSE`.
+  If your API key belongs to a user with auto-pay enabled (`PATCH /api/auth/auto-pay`), payment
+  requests are processed automatically and you'll receive `PAYMENT_SUCCESSFUL` without needing to
+  send `PAYMENT_RESPONSE`.
 </Callout>
 
 ## Rate limits
 
-| Endpoint | Limit |
-|---|---|
-| `POST /api/sessions` | 60/minute per API key |
-| WebSocket messages | 10/second per session |
-| Concurrent sessions | 5 per API key (contact sales for more) |
+| Endpoint             | Limit                                  |
+| -------------------- | -------------------------------------- |
+| `POST /api/sessions` | 60/minute per API key                  |
+| WebSocket messages   | 10/second per session                  |
+| Concurrent sessions  | 5 per API key (contact sales for more) |
 
 </DocsContent>

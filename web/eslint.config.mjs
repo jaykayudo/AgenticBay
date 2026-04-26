@@ -40,6 +40,11 @@ const eslintConfig = defineConfig([
 
       // General
       "no-console": ["warn", { allow: ["warn", "error"] }],
+
+      // The app is not written for React Compiler-style purity constraints yet.
+      "react-hooks/immutability": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
     },
   },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "node_modules/**"]),

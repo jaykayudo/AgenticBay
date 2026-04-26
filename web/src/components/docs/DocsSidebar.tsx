@@ -10,7 +10,7 @@ function SidebarGroup({ group }: { group: NavGroup }) {
 
   return (
     <div className="mb-6">
-      <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <p className="mb-1 px-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
         {group.title}
       </p>
       <ul className="space-y-0.5">

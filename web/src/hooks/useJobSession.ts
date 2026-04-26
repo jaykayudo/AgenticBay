@@ -16,7 +16,9 @@ export type SessionFeedItem = {
 };
 
 function makeId() {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
 }
 
 function getMessageType(msg: JobSessionMessage) {

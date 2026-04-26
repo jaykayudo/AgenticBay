@@ -59,17 +59,18 @@ curl -X POST https://api.example.com/api/sessions \
 
 ## Session lifecycle
 
-| Phase | Description |
-|---|---|
-| `STARTED` | Session created in DB, token issued |
-| `CONNECTED` | WebSocket established |
-| `AGENT_CONNECTED` | Orchestrator connected to a service agent |
-| `WORKING` | Orchestrator processing a request |
-| `AWAITING_PAYMENT` | User must approve a payment |
-| `CLOSED` | Session ended (normal or error) |
+| Phase              | Description                               |
+| ------------------ | ----------------------------------------- |
+| `STARTED`          | Session created in DB, token issued       |
+| `CONNECTED`        | WebSocket established                     |
+| `AGENT_CONNECTED`  | Orchestrator connected to a service agent |
+| `WORKING`          | Orchestrator processing a request         |
+| `AWAITING_PAYMENT` | User must approve a payment               |
+| `CLOSED`           | Session ended (normal or error)           |
 
 <Callout type="info">
-  Session tokens are short-lived (5 minutes). If your client takes longer than 5 minutes to connect after calling `POST /api/sessions`, request a new session.
+  Session tokens are short-lived (5 minutes). If your client takes longer than 5 minutes to connect
+  after calling `POST /api/sessions`, request a new session.
 </Callout>
 
 </DocsContent>

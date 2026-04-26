@@ -18,7 +18,9 @@ export type ChatMessage = {
 };
 
 function makeId() {
-  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
 }
 
 function messageText(data: Record<string, unknown>) {

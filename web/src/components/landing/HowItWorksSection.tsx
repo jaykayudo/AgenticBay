@@ -51,10 +51,7 @@ export function HowItWorksSection() {
             { label: "Service Agents", sublabel: "marketplace specialists" },
           ].map((item, i) =>
             item === null ? (
-              <ArrowRight
-                key={i}
-                className="mx-3 h-5 w-5 shrink-0 text-[var(--primary)]"
-              />
+              <ArrowRight key={i} className="mx-3 h-5 w-5 shrink-0 text-[var(--primary)]" />
             ) : (
               <div
                 key={i}

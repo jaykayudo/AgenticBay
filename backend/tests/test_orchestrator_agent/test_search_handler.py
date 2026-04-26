@@ -18,13 +18,13 @@ import uuid
 
 import pytest
 
+from app.agents.orchestrator.schema import SessionPhase
 from tests.test_orchestrator_agent.conftest import (
     FakeSend,
     FakeSessionStore,
     build_orchestrator,
     make_state,
 )
-from app.agents.orchestrator.schema import SessionPhase
 
 pytestmark = [pytest.mark.asyncio]
 

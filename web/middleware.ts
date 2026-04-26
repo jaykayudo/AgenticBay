@@ -4,12 +4,7 @@ import type { NextRequest } from "next/server";
 const SIGN_IN_PATH = "/login";
 
 const PROTECTED_PATHS = ["/dashboard", "/wallet", "/agents", "/settings", "/jobs"];
-const PUBLIC_ONLY_PATHS = [
-  "/login",
-  "/auth/signin",
-  "/auth/email/request",
-  "/auth/email/verify",
-];
+const PUBLIC_ONLY_PATHS = ["/login", "/auth/signin", "/auth/email/request", "/auth/email/verify"];
 
 function isLocalRedirect(path: string | null) {
   return Boolean(path?.startsWith("/") && !path.startsWith("//"));
@@ -30,10 +25,9 @@ export function middleware(request: NextRequest) {
 
   if (isPublicOnly && refreshToken) {
     const redirectAfter = request.nextUrl.searchParams.get("redirect_after");
-    const redirectPath = isLocalRedirect(redirectAfter) && redirectAfter ? redirectAfter : "/dashboard";
-    return NextResponse.redirect(
-      new URL(redirectPath, request.url)
-    );
+    const redirectPath =
+      isLocalRedirect(redirectAfter) && redirectAfter ? redirectAfter : "/dashboard";
+    return NextResponse.redirect(new URL(redirectPath, request.url));
   }
 
   return NextResponse.next();

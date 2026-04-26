@@ -34,7 +34,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --dev --all-extras
 
       - name: Run ruff lint
         run: uv run ruff check .
@@ -56,7 +56,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --dev --all-extras
 
       - name: Check ruff formatting
         run: uv run ruff format --check .
@@ -125,12 +125,14 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --dev --all-extras
 
       - name: Run tests
         env:
           APP_ENV: testing
+          DEBUG: "true"
           SECRET_KEY: ci-test-secret-key
+          JWT_SECRET: ci-test-jwt-secret
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/agentic_bay_test
           DATABASE_URL_SYNC: postgresql+psycopg2://postgres:postgres@localhost:5432/agentic_bay_test
           REDIS_URL: redis://localhost:6379/0

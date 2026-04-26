@@ -232,7 +232,9 @@ export default function AdminDashboardPage() {
                   {jobs.jobs.map((job) => (
                     <tr key={job.id} className="border-t border-[var(--border)]">
                       <td className="px-4 py-3 text-[var(--text)]">{job.id}</td>
-                      <td className="px-4 py-3 text-[var(--text-muted)]">{"status" in job ? job.status : "--"}</td>
+                      <td className="px-4 py-3 text-[var(--text-muted)]">
+                        {"status" in job ? job.status : "--"}
+                      </td>
                       <td className="px-4 py-3 text-[var(--text-muted)]">
                         {"amountUsdc" in job && typeof job.amountUsdc === "number"
                           ? `${job.amountUsdc} USDC`

@@ -74,10 +74,12 @@ class ApiKeyRepository(BaseRepository[ApiKey]):
         prefix = raw_key[:16]
         now = datetime.now(UTC)
         result = await self.session.execute(
-            select(ApiKey).where(
+            select(ApiKey)
+            .where(
                 ApiKey.key_prefix == prefix,
                 ApiKey.is_active == True,  # noqa: E712
-            ).options(selectinload(ApiKey.user))
+            )
+            .options(selectinload(ApiKey.user))
         )
         candidates = list(result.scalars().all())
         for key in candidates:

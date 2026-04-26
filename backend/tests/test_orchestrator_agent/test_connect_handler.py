@@ -15,10 +15,11 @@ from __future__ import annotations
 
 import json
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from app.agents.orchestrator.schema import SessionPhase
 from tests.test_orchestrator_agent.conftest import (
     FakeSend,
     FakeSessionStore,
@@ -26,7 +27,6 @@ from tests.test_orchestrator_agent.conftest import (
     make_db_agent,
     make_state,
 )
-from app.agents.orchestrator.schema import SessionPhase
 
 pytestmark = [pytest.mark.asyncio]
 

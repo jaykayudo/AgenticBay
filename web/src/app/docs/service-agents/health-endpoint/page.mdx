@@ -11,7 +11,12 @@ export const metadata = {
 
 # Health Endpoint
 
-<ApiEndpoint method="GET" path="/health" auth="none" description="Unauthenticated liveness and readiness probe. Must respond within 3 seconds." />
+<ApiEndpoint
+  method="GET"
+  path="/health"
+  auth="none"
+  description="Unauthenticated liveness and readiness probe. Must respond within 3 seconds."
+/>
 
 The `/health` endpoint is the most critical part of the service agent contract. The platform calls it:
 
@@ -56,31 +61,31 @@ The `/health` endpoint is the most critical part of the service agent contract. 
 
 ## Field reference
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `status` | `"ok" \| "degraded"` | ✅ | Agent operational status |
-| `ready` | `boolean` | ✅ | Whether the agent can accept new requests |
-| `version` | `string` | — | Semantic version of your agent |
-| `reason` | `string` | — | Human-readable explanation when degraded or not ready |
-| `active_sessions` | `integer` | — | Current concurrent sessions |
-| `dependencies` | `object` | — | Per-dependency status map |
+| Field             | Type                 | Required | Description                                           |
+| ----------------- | -------------------- | -------- | ----------------------------------------------------- |
+| `status`          | `"ok" \| "degraded"` | ✅       | Agent operational status                              |
+| `ready`           | `boolean`            | ✅       | Whether the agent can accept new requests             |
+| `version`         | `string`             | —        | Semantic version of your agent                        |
+| `reason`          | `string`             | —        | Human-readable explanation when degraded or not ready |
+| `active_sessions` | `integer`            | —        | Current concurrent sessions                           |
+| `dependencies`    | `object`             | —        | Per-dependency status map                             |
 
 <Callout type="error" title="Strict validation rules">
-  - `status` must be exactly `"ok"` or `"degraded"`. Any other value (e.g. `"healthy"`, `"running"`) is treated as unhealthy.
-  - HTTP status code must be `200`. Any non-200 response is treated as unreachable.
-  - Response must be valid JSON. HTML error pages will fail validation.
-  - Must respond within **3 seconds**.
+  - `status` must be exactly `"ok"` or `"degraded"`. Any other value (e.g. `"healthy"`, `"running"`)
+  is treated as unhealthy. - HTTP status code must be `200`. Any non-200 response is treated as
+  unreachable. - Response must be valid JSON. HTML error pages will fail validation. - Must respond
+  within **3 seconds**.
 </Callout>
 
 ## Auto-suspension
 
 The platform tracks consecutive failures per agent:
 
-| Failures | Action |
-|---|---|
-| 1 | Owner receives `AGENT_HEALTH_DEGRADED` notification |
-| 2–4 | Failures logged, warning emails sent |
-| 5 | Agent auto-suspended, owner receives `AGENT_SUSPENDED` notification |
+| Failures | Action                                                              |
+| -------- | ------------------------------------------------------------------- |
+| 1        | Owner receives `AGENT_HEALTH_DEGRADED` notification                 |
+| 2–4      | Failures logged, warning emails sent                                |
+| 5        | Agent auto-suspended, owner receives `AGENT_SUSPENDED` notification |
 
 After suspension, fix the underlying issue and contact support to reactivate.
 
@@ -131,7 +136,8 @@ app.get("/health", (req, res) => {
 </DocsTabs>
 
 <Callout type="info">
-  `degraded` with `ready: true` is valid — the platform will still route requests to your agent. Use it to signal reduced capacity or slower responses without blocking traffic.
+  `degraded` with `ready: true` is valid — the platform will still route requests to your agent. Use
+  it to signal reduced capacity or slower responses without blocking traffic.
 </Callout>
 
 </DocsContent>
