@@ -249,7 +249,11 @@ function GenerateKeyModal({
             }
             className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] shadow-[var(--shadow-soft)] disabled:opacity-60"
           >
-            {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {busy ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
             Generate key
           </button>
         </div>
@@ -390,7 +394,11 @@ function RevokeKeyModal({
             onClick={() => onRevoke(reason)}
             className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--danger)] px-5 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {busy ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
             Revoke key
           </button>
         </div>
@@ -448,7 +456,11 @@ function RotateKeyModal({
             onClick={onRotate}
             className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] disabled:opacity-60"
           >
-            {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {busy ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
             Rotate key
           </button>
         </div>
@@ -584,7 +596,11 @@ function ApiKeyCard({
             onClick={onCopyPrefix}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--border)] px-4 text-sm font-medium text-[var(--text)] transition hover:bg-[var(--surface-2)]"
           >
-            {copied ? <Check className="h-4 w-4 text-[var(--accent)]" /> : <Copy className="h-4 w-4" />}
+            {copied ? (
+              <Check className="h-4 w-4 text-[var(--accent)]" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
             {copied ? "Copied" : "Copy prefix"}
           </button>
           {apiKey.is_active ? (
@@ -799,13 +815,13 @@ export function ApiKeyManagementPanel() {
       ) : null}
 
       {!keysQuery.isLoading && keys.length === 0 ? (
-        <div className="mt-6 app-subtle p-6 text-sm text-[var(--text-muted)]">
+        <div className="app-subtle mt-6 p-6 text-sm text-[var(--text-muted)]">
           No API keys yet. Generate a key when you are ready to connect an integration.
         </div>
       ) : null}
 
       {visibleKeys.length === 0 && keys.length > 0 ? (
-        <div className="mt-6 app-subtle p-6 text-sm text-[var(--text-muted)]">
+        <div className="app-subtle mt-6 p-6 text-sm text-[var(--text-muted)]">
           No keys match the current filters.
         </div>
       ) : null}
@@ -832,7 +848,7 @@ export function ApiKeyManagementPanel() {
       ) : null}
 
       {visibleRevoked.length > 0 ? (
-        <details className="mt-6 group" open={visibleActive.length === 0}>
+        <details className="group mt-6" open={visibleActive.length === 0}>
           <summary className="cursor-pointer text-sm font-semibold text-[var(--text)]">
             Revoked keys ({revokedKeys.length})
           </summary>
@@ -880,7 +896,9 @@ export function ApiKeyManagementPanel() {
         />
       ) : null}
 
-      {usageTarget ? <UsageStatsModal apiKey={usageTarget} onClose={() => setUsageTarget(null)} /> : null}
+      {usageTarget ? (
+        <UsageStatsModal apiKey={usageTarget} onClose={() => setUsageTarget(null)} />
+      ) : null}
     </section>
   );
 }

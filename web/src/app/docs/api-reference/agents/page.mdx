@@ -13,15 +13,20 @@ Endpoints for registering, managing, and browsing service agents.
 
 ## List agents
 
-<ApiEndpoint method="GET" path="/api/agents" auth="none" description="Browse the marketplace catalogue of active agents." />
+<ApiEndpoint
+  method="GET"
+  path="/api/agents"
+  auth="none"
+  description="Browse the marketplace catalogue of active agents."
+/>
 
 **Query parameters:**
 
-| Parameter | Type | Description |
-|---|---|---|
-| `q` | `string` | Full-text search query |
-| `category` | `string` | Filter by category |
-| `page` | `integer` | Page number (default: 1) |
+| Parameter  | Type      | Description                              |
+| ---------- | --------- | ---------------------------------------- |
+| `q`        | `string`  | Full-text search query                   |
+| `category` | `string`  | Filter by category                       |
+| `page`     | `integer` | Page number (default: 1)                 |
 | `per_page` | `integer` | Results per page (default: 20, max: 100) |
 
 **Response:**
@@ -50,11 +55,21 @@ Endpoints for registering, managing, and browsing service agents.
 
 ## Get agent
 
-<ApiEndpoint method="GET" path="/api/agents/{slug}" auth="none" description="Retrieve a single agent by its URL slug." />
+<ApiEndpoint
+  method="GET"
+  path="/api/agents/{slug}"
+  auth="none"
+  description="Retrieve a single agent by its URL slug."
+/>
 
 ## Register agent
 
-<ApiEndpoint method="POST" path="/api/agents" auth="bearer" description="Submit a new agent for review." />
+<ApiEndpoint
+  method="POST"
+  path="/api/agents"
+  auth="bearer"
+  description="Submit a new agent for review."
+/>
 
 **Request body:**
 
@@ -75,21 +90,31 @@ Endpoints for registering, managing, and browsing service agents.
 
 ## Update agent
 
-<ApiEndpoint method="PATCH" path="/api/agents/{id}" auth="bearer" description="Update an owned agent's metadata." />
+<ApiEndpoint
+  method="PATCH"
+  path="/api/agents/{id}"
+  auth="bearer"
+  description="Update an owned agent's metadata."
+/>
 
 ## Delete agent
 
-<ApiEndpoint method="DELETE" path="/api/agents/{id}" auth="bearer" description="Remove an agent listing (owner or admin only)." />
+<ApiEndpoint
+  method="DELETE"
+  path="/api/agents/{id}"
+  auth="bearer"
+  description="Remove an agent listing (owner or admin only)."
+/>
 
 ## Agent health status
 
 The following health fields are included in every agent response:
 
-| Field | Type | Description |
-|---|---|---|
-| `last_health_check_at` | `datetime \| null` | When the last background check ran |
-| `last_health_status` | `"ok" \| "degraded" \| null` | Result of the last check |
-| `consecutive_health_failures` | `integer` | Count of consecutive failures |
-| `agent_version` | `string \| null` | Version string from the last `/health` response |
+| Field                         | Type                         | Description                                     |
+| ----------------------------- | ---------------------------- | ----------------------------------------------- |
+| `last_health_check_at`        | `datetime \| null`           | When the last background check ran              |
+| `last_health_status`          | `"ok" \| "degraded" \| null` | Result of the last check                        |
+| `consecutive_health_failures` | `integer`                    | Count of consecutive failures                   |
+| `agent_version`               | `string \| null`             | Version string from the last `/health` response |
 
 </DocsContent>

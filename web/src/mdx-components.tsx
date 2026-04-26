@@ -1,8 +1,8 @@
 import type { MDXComponents } from "mdx/types";
 
+import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
 import { Callout } from "@/components/docs/Callout";
 import { DocsTabs, DocsTabItem } from "@/components/docs/DocsTabs";
-import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {

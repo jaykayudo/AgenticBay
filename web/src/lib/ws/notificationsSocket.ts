@@ -1,4 +1,8 @@
-import { normalizeNotification, type Notification, type RawNotification } from "@/lib/api/notifications";
+import {
+  normalizeNotification,
+  type Notification,
+  type RawNotification,
+} from "@/lib/api/notifications";
 import { tokenManager } from "@/lib/auth/tokenManager";
 
 type NotificationHandler = (notification: Notification) => void;
@@ -8,14 +12,17 @@ type NotificationsSocket = {
 };
 
 function buildNotificationsSocketUrl(token: string) {
-  const wsBase = (process.env.NEXT_PUBLIC_WS_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "ws://localhost:8000").replace(
-    /^http/,
-    "ws"
-  );
+  const wsBase = (
+    process.env.NEXT_PUBLIC_WS_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    "ws://localhost:8000"
+  ).replace(/^http/, "ws");
   return `${wsBase}/api/notifications/ws?token=${encodeURIComponent(token)}`;
 }
 
-export function connectNotificationsSocket(onNotification: NotificationHandler): NotificationsSocket {
+export function connectNotificationsSocket(
+  onNotification: NotificationHandler
+): NotificationsSocket {
   let socket: WebSocket | null = null;
   let reconnectTimer: number | null = null;
   let reconnectDelay = 1000;

@@ -8,7 +8,10 @@ type PaymentResponse = { confirmed: boolean };
 type PromptResponse = { answer?: string; selected_option?: string };
 
 type ChatModalContextValue = {
-  showPaymentModal: (data: PaymentModalData, onRespond: (response: PaymentResponse) => void) => void;
+  showPaymentModal: (
+    data: PaymentModalData,
+    onRespond: (response: PaymentResponse) => void
+  ) => void;
   showPromptModal: (data: PromptModalData, onRespond: (response: PromptResponse) => void) => void;
 };
 
@@ -68,8 +71,8 @@ export function ChatModalProvider({ children }: { children: ReactNode }) {
                   <p className="mt-2 text-2xl font-semibold text-[var(--text)]">
                     {String(modal.data.amount ?? "--")} {String(modal.data.currency ?? "USDC")}
                   </p>
-                  {modal.data.invoice_id ?? modal.data.invoiceId ? (
-                    <p className="mt-2 break-all text-xs text-[var(--text-muted)]">
+                  {(modal.data.invoice_id ?? modal.data.invoiceId) ? (
+                    <p className="mt-2 text-xs break-all text-[var(--text-muted)]">
                       Invoice: {String(modal.data.invoice_id ?? modal.data.invoiceId)}
                     </p>
                   ) : null}

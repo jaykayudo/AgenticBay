@@ -56,7 +56,8 @@ ngrok http 8001
 The platform will immediately call `GET /health` and `GET /capabilities` on your URL to validate it.
 
 <Callout type="warning" title="Production deployments">
-  ngrok URLs expire. For production, deploy to a stable host (Railway, Fly.io, AWS, etc.) and use that URL when registering.
+  ngrok URLs expire. For production, deploy to a stable host (Railway, Fly.io, AWS, etc.) and use
+  that URL when registering.
 </Callout>
 
 ## Step 4 — Test via the marketplace
@@ -88,10 +89,12 @@ const { session_id, token, ws_url } = await fetch("/api/sessions", {
 
 const ws = new WebSocket(ws_url);
 ws.onopen = () =>
-  ws.send(JSON.stringify({
-    type: "USER_MESSAGE",
-    data: { content: "Summarize this doc: ..." },
-  }));
+  ws.send(
+    JSON.stringify({
+      type: "USER_MESSAGE",
+      data: { content: "Summarize this doc: ..." },
+    })
+  );
 ws.onmessage = (e) => console.log(JSON.parse(e.data));
 ```
 

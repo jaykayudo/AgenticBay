@@ -89,7 +89,6 @@ async def test_last_activity_at_updated_before_dispatch() -> None:
     store = FakeSessionStore()
     state = make_state()
     await store.save(state)
-    original_ts = state.last_activity_at
 
     orch = build_orchestrator(store)
     # Configure mocks for a minimal SEARCH_AGENT flow
@@ -126,4 +125,5 @@ async def test_close_message_dispatched_successfully() -> None:
     assert len(send.of_type("ERROR")) == 0
     saved = await store.get(state.session_id)
     from app.agents.orchestrator.schema import SessionPhase
+
     assert saved.phase == SessionPhase.CLOSED

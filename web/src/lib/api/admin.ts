@@ -1,7 +1,7 @@
 import type { AxiosResponse } from "axios";
 
-import { authApiClient } from "@/lib/api/client";
 import type { Agent } from "@/lib/api/agents";
+import { authApiClient } from "@/lib/api/client";
 import type { Job } from "@/lib/api/jobs";
 
 export type PendingAgent = Agent;
@@ -106,14 +106,18 @@ export const adminApi = {
     userId: string,
     status: "ACTIVE" | "SUSPENDED" | "BANNED"
   ): Promise<AxiosResponse<AdminUser>> {
-    return authApiClient.patch(`/admin/users/${userId}/status`, { status: normalizeStatus(status) });
+    return authApiClient.patch(`/admin/users/${userId}/status`, {
+      status: normalizeStatus(status),
+    });
   },
 
   platformStats(): Promise<AxiosResponse<AdminPlatformStats>> {
     return authApiClient.get("/admin/stats");
   },
 
-  async listAllJobs(filters: Record<string, unknown> = {}): Promise<AxiosResponse<PaginatedResponse<AdminJob | Job>>> {
+  async listAllJobs(
+    filters: Record<string, unknown> = {}
+  ): Promise<AxiosResponse<PaginatedResponse<AdminJob | Job>>> {
     const limit = typeof filters.limit === "number" ? filters.limit : 50;
     const page = typeof filters.page === "number" ? filters.page : 1;
     const response = await authApiClient.get<AdminJob[]>("/admin/jobs", {

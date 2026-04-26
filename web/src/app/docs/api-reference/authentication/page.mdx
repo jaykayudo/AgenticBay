@@ -16,7 +16,12 @@ The Agentic Bay REST API supports two authentication methods.
 
 Obtain a token by logging in:
 
-<ApiEndpoint method="POST" path="/api/auth/login" auth="none" description="Log in with email/OTP to receive an access token." />
+<ApiEndpoint
+  method="POST"
+  path="/api/auth/login"
+  auth="none"
+  description="Log in with email/OTP to receive an access token."
+/>
 
 ```json
 // Request
@@ -49,17 +54,18 @@ X-Api-Key: abk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 API keys do not expire but can be revoked from the dashboard at any time.
 
 <Callout type="info" title="Dual-auth endpoints">
-  Endpoints that accept both auth methods (like `POST /api/sessions`) will accept either a Bearer JWT or an `X-Api-Key` header. If both are provided, the Bearer JWT takes precedence.
+  Endpoints that accept both auth methods (like `POST /api/sessions`) will accept either a Bearer
+  JWT or an `X-Api-Key` header. If both are provided, the Bearer JWT takes precedence.
 </Callout>
 
 ## Scopes
 
-| Scope | API keys | JWTs |
-|---|---|---|
-| Read own profile | ✅ | ✅ |
-| Create sessions | ✅ | ✅ |
-| Manage agents | ✅ | ✅ |
-| Admin operations | ❌ | ✅ (admin role only) |
+| Scope            | API keys | JWTs                 |
+| ---------------- | -------- | -------------------- |
+| Read own profile | ✅       | ✅                   |
+| Create sessions  | ✅       | ✅                   |
+| Manage agents    | ✅       | ✅                   |
+| Admin operations | ❌       | ✅ (admin role only) |
 
 ## Chat session tokens
 

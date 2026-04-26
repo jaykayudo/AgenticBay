@@ -13,7 +13,12 @@ Endpoints for search, ratings, and marketplace-level operations.
 
 ## Vector search
 
-<ApiEndpoint method="POST" path="/api/marketplace/search" auth="none" description="Semantic search for agents using natural-language queries." />
+<ApiEndpoint
+  method="POST"
+  path="/api/marketplace/search"
+  auth="none"
+  description="Semantic search for agents using natural-language queries."
+/>
 
 **Request:**
 
@@ -47,7 +52,12 @@ Results are automatically filtered to only include healthy agents. Unhealthy age
 
 ## Rate an agent
 
-<ApiEndpoint method="POST" path="/api/marketplace/agents/{agent_id}/ratings" auth="bearer" description="Submit a 1–5 star rating after completing a session." />
+<ApiEndpoint
+  method="POST"
+  path="/api/marketplace/agents/{agent_id}/ratings"
+  auth="bearer"
+  description="Submit a 1–5 star rating after completing a session."
+/>
 
 ```json
 {
@@ -59,13 +69,28 @@ Results are automatically filtered to only include healthy agents. Unhealthy age
 
 ## Get ratings
 
-<ApiEndpoint method="GET" path="/api/marketplace/agents/{agent_id}/ratings" auth="none" description="List ratings for an agent." />
+<ApiEndpoint
+  method="GET"
+  path="/api/marketplace/agents/{agent_id}/ratings"
+  auth="none"
+  description="List ratings for an agent."
+/>
 
 ## User profile
 
-<ApiEndpoint method="GET" path="/api/auth/me" auth="bearer" description="Get the current user's profile including auto-pay settings." />
+<ApiEndpoint
+  method="GET"
+  path="/api/auth/me"
+  auth="bearer"
+  description="Get the current user's profile including auto-pay settings."
+/>
 
-<ApiEndpoint method="PATCH" path="/api/auth/auto-pay" auth="bearer" description="Enable or disable auto-pay for USDC payments." />
+<ApiEndpoint
+  method="PATCH"
+  path="/api/auth/auto-pay"
+  auth="bearer"
+  description="Enable or disable auto-pay for USDC payments."
+/>
 
 ```json
 {

@@ -116,9 +116,7 @@ async def test_rerank_agents_sorts_by_relevance_score_descending() -> None:
         {"id": "a2", "relevance_score": 0.9, "match_reason": "best"},
         {"id": "a3", "relevance_score": 0.6, "match_reason": "mid"},
     ]
-    llm.client.messages.create = AsyncMock(
-        return_value=_llm_response(json.dumps(rankings))
-    )
+    llm.client.messages.create = AsyncMock(return_value=_llm_response(json.dumps(rankings)))
 
     result = await llm.rerank_agents("query", agents)
 
@@ -204,9 +202,7 @@ async def test_find_payment_success_command_returns_parsed_command() -> None:
         "command": "CONFIRM_PAYMENT",
         "arguments_template": {"invoice_id": "<invoice_id>"},
     }
-    llm.client.messages.create = AsyncMock(
-        return_value=_llm_response(json.dumps(expected))
-    )
+    llm.client.messages.create = AsyncMock(return_value=_llm_response(json.dumps(expected)))
 
     result = await llm.find_payment_success_command("capability document text")
 
@@ -229,9 +225,7 @@ async def test_find_payment_success_command_passes_capabilities_to_llm() -> None
 
 async def test_find_payment_success_command_defaults_on_json_parse_error() -> None:
     llm = _make_llm()
-    llm.client.messages.create = AsyncMock(
-        return_value=_llm_response("this is not valid JSON!!!")
-    )
+    llm.client.messages.create = AsyncMock(return_value=_llm_response("this is not valid JSON!!!"))
 
     result = await llm.find_payment_success_command("caps doc")
 

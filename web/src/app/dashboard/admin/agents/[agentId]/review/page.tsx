@@ -116,7 +116,7 @@ export default function AdminAgentReviewPage() {
               <div className="mt-4 space-y-4 text-sm">
                 <div>
                   <p className="text-[var(--text-muted)]">Base URL</p>
-                  <p className="mt-1 break-all font-medium text-[var(--text)]">
+                  <p className="mt-1 font-medium break-all text-[var(--text)]">
                     {data?.agent.baseUrl ?? "--"}
                   </p>
                 </div>
@@ -151,7 +151,7 @@ export default function AdminAgentReviewPage() {
             <div className="mt-4 space-y-4 text-sm">
               <div>
                 <p className="text-[var(--text-muted)]">Email</p>
-                <p className="mt-1 break-all font-medium text-[var(--text)]">
+                <p className="mt-1 font-medium break-all text-[var(--text)]">
                   {data?.owner.email ?? "--"}
                 </p>
               </div>
@@ -163,7 +163,7 @@ export default function AdminAgentReviewPage() {
               </div>
               <div>
                 <p className="text-[var(--text-muted)]">Proxy contract</p>
-                <p className="mt-1 break-all font-medium text-[var(--text)]">
+                <p className="mt-1 font-medium break-all text-[var(--text)]">
                   {data?.proxyContractAddress ?? "--"}
                 </p>
               </div>

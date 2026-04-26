@@ -67,7 +67,8 @@ CLOSED ◄───────────────────────�
 Sessions in `STARTED` or `CONNECTED` phase can be reconnected with the same `session_id` and a **new** token (call `POST /api/sessions` again with the same credentials — implementation note: currently a new `session_id` is issued on each call).
 
 <Callout type="warning">
-  The WebSocket endpoint rejects any `session_id` that is not found in the database (close code 4004). Always call `POST /api/sessions` first — never generate a session ID client-side.
+  The WebSocket endpoint rejects any `session_id` that is not found in the database (close code
+  4004). Always call `POST /api/sessions` first — never generate a session ID client-side.
 </Callout>
 
 ## Session expiry

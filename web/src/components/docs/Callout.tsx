@@ -8,10 +8,7 @@ interface CalloutProps {
   children: React.ReactNode;
 }
 
-const config: Record<
-  CalloutType,
-  { icon: React.ElementType; className: string }
-> = {
+const config: Record<CalloutType, { icon: React.ElementType; className: string }> = {
   info: {
     icon: Info,
     className:
@@ -41,9 +38,7 @@ export function Callout({ type = "info", title, children }: CalloutProps) {
     <div className={`my-6 flex gap-3 rounded-lg border p-4 ${className}`}>
       <Icon className="mt-0.5 size-4 shrink-0" />
       <div className="min-w-0 flex-1 text-sm">
-        {title && (
-          <p className="callout-title mb-1 font-semibold">{title}</p>
-        )}
+        {title && <p className="callout-title mb-1 font-semibold">{title}</p>}
         <div className="text-foreground/80 [&>p]:m-0">{children}</div>
       </div>
     </div>

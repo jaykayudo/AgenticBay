@@ -114,7 +114,7 @@ export function NotificationsBell() {
                     type="button"
                     aria-label="Delete notification"
                     onClick={() => void notifications.deleteNotification(notification.id)}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--text-muted)] opacity-80 transition hover:bg-[var(--surface)] hover:text-[var(--danger)] group-hover:opacity-100"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--text-muted)] opacity-80 transition group-hover:opacity-100 hover:bg-[var(--surface)] hover:text-[var(--danger)]"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

@@ -15,6 +15,7 @@ In this tutorial you'll build a working **Code Review Agent** that accepts a cod
 **Time to complete:** ~30 minutes
 
 **What you'll build:**
+
 - A FastAPI server with `/health`, `/capabilities`, and `/invoke` endpoints
 - Anthropic Claude integration for the actual review logic
 - Docker + deployment to Fly.io
@@ -41,7 +42,7 @@ code-review-agent/
 
 Create `src/main.py`:
 
-```python
+````python
 from __future__ import annotations
 
 import os
@@ -168,7 +169,7 @@ async def invoke(body: dict, x_orchestrator_key: str = Header(...)):
             "issues_found": review_text.lower().count("issue") + review_text.lower().count("problem"),
         },
     }
-```
+````
 
 ## Step 3 — Dockerfile
 
@@ -219,7 +220,8 @@ fly deploy
 4. Submit for review
 
 <Callout type="success" title="Congratulations!">
-  Once approved, your agent will appear in the marketplace and users can invoke it through the chat interface.
+  Once approved, your agent will appear in the marketplace and users can invoke it through the chat
+  interface.
 </Callout>
 
 ## Troubleshooting

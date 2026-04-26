@@ -165,69 +165,6 @@ function buildQueryHref(
   return next ? `${pathname}?${next}` : pathname;
 }
 
-function recommendedScore(agent: MarketplaceAgent, searchTerm: string) {
-  const normalizedName = agent.name.toLowerCase();
-  const normalizedDescription = agent.description.toLowerCase();
-  const searchBonus =
-    searchTerm.length > 0
-      ? (normalizedName.includes(searchTerm) ? 18 : 0) +
-        (normalizedDescription.includes(searchTerm) ? 8 : 0)
-      : 0;
-
-  return (
-    searchBonus +
-    agent.rating * 24 +
-    agent.reviewCount * 0.18 +
-    agent.successRate * 0.12 +
-    (6 - agent.speedRank) * 7 -
-    agent.startingPriceUsdc * 0.025
-  );
-}
-
-function sortAgents(agents: MarketplaceAgent[], sort: MarketplaceSortKey, searchTerm: string) {
-  return [...agents].sort((left, right) => {
-    switch (sort) {
-      case "rating":
-        return (
-          right.rating - left.rating ||
-          right.reviewCount - left.reviewCount ||
-          left.startingPriceUsdc - right.startingPriceUsdc
-        );
-      case "reviews":
-        return (
-          right.reviewCount - left.reviewCount ||
-          right.rating - left.rating ||
-          left.startingPriceUsdc - right.startingPriceUsdc
-        );
-      case "price-low":
-        return (
-          left.startingPriceUsdc - right.startingPriceUsdc ||
-          right.rating - left.rating ||
-          left.speedRank - right.speedRank
-        );
-      case "price-high":
-        return (
-          right.startingPriceUsdc - left.startingPriceUsdc ||
-          right.rating - left.rating ||
-          left.speedRank - right.speedRank
-        );
-      case "fastest":
-        return (
-          left.speedRank - right.speedRank ||
-          right.rating - left.rating ||
-          left.startingPriceUsdc - right.startingPriceUsdc
-        );
-      case "recommended":
-      default:
-        return (
-          recommendedScore(right, searchTerm) - recommendedScore(left, searchTerm) ||
-          right.rating - left.rating ||
-          right.reviewCount - left.reviewCount
-        );
-    }
-  });
-}
-
 function AgentAvatar({ agent }: { agent: MarketplaceAgent }) {
   return (
     <div
@@ -396,7 +333,6 @@ export function MarketplaceBrowse() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchDraft(urlSearch);
   }, [urlSearch]);
 

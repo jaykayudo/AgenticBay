@@ -2,11 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import {
-  apiKeysApi,
-  type ApiKeyCreatePayload,
-  type ApiKeyUpdatePayload,
-} from "@/lib/api/apiKeys";
+import { apiKeysApi, type ApiKeyCreatePayload, type ApiKeyUpdatePayload } from "@/lib/api/apiKeys";
 
 export const apiKeysQueryKey = ["api-keys"] as const;
 

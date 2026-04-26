@@ -462,7 +462,6 @@ export function UserSettingsPage() {
           </div>
         </Modal>
       ) : null}
-
     </div>
   );
 }

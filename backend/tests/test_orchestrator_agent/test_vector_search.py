@@ -22,6 +22,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.agents.orchestrator.vector_search import VectorSearch
+from app.services.health_client import HealthCheckResult
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -33,6 +34,18 @@ def _make_vs() -> VectorSearch:
     """Construct VectorSearch without __init__; _vo is set to an AsyncMock."""
     vs = VectorSearch.__new__(VectorSearch)
     vs._vo = AsyncMock()
+    vs._health_client = AsyncMock()
+    vs._health_client.is_healthy_from_cache.return_value = True
+    vs._health_client.check.return_value = HealthCheckResult(
+        healthy=True,
+        ready=True,
+        status="ok",
+        reason=None,
+        agent_version="test",
+        active_sessions=0,
+        response_time_ms=1.0,
+    )
+    vs._health_client.set_cached.return_value = None
     return vs
 
 
@@ -207,8 +220,8 @@ async def test_search_respects_top_k_parameter() -> None:
         await vs.search("query", top_k=3)
 
     call_args = conn_mock.fetch.call_args[0]
-    # top_k ($2) is passed as the second positional parameter to fetch
-    assert 3 in call_args
+    # Vector search fetches extra candidates before health filtering.
+    assert 6 in call_args
 
 
 async def test_search_default_top_k_is_ten() -> None:
@@ -221,7 +234,7 @@ async def test_search_default_top_k_is_ten() -> None:
         await vs.search("query")
 
     call_args = conn_mock.fetch.call_args[0]
-    assert 10 in call_args
+    assert 20 in call_args
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -238,15 +251,17 @@ async def test_index_agent_returns_agent_id_on_success() -> None:
     ctx, _ = _fake_conn()
 
     with patch("app.agents.orchestrator.vector_search.asyncpg_connection", ctx):
-        result = await vs.index_agent({
-            "id": agent_id,
-            "name": "TestBot",
-            "description": "Does things",
-            "avg_rating": 4.5,
-            "pricing_summary": {"task": 10},
-            "category": "automation",
-            "tags": ["ml"],
-        })
+        result = await vs.index_agent(
+            {
+                "id": agent_id,
+                "name": "TestBot",
+                "description": "Does things",
+                "avg_rating": 4.5,
+                "pricing_summary": {"task": 10},
+                "category": "automation",
+                "tags": ["ml"],
+            }
+        )
 
     assert result == agent_id
 

@@ -10,7 +10,12 @@ export const metadata = {
 
 # Invoke Endpoint
 
-<ApiEndpoint method="POST" path="/invoke" auth="bearer" description="Execute an action. The orchestrator sends structured requests here." />
+<ApiEndpoint
+  method="POST"
+  path="/invoke"
+  auth="bearer"
+  description="Execute an action. The orchestrator sends structured requests here."
+/>
 
 The `/invoke` endpoint is where the actual work happens. The orchestrator calls it after connecting to your agent and receiving a task from the user.
 
@@ -33,13 +38,13 @@ The `/invoke` endpoint is where the actual work happens. The orchestrator calls 
 
 ### Request fields
 
-| Field | Type | Description |
-|---|---|---|
-| `session_id` | `string (UUID)` | Marketplace session identifier |
-| `command` | `string` | Action name from `/capabilities` |
-| `arguments` | `object` | Arguments matching the action's `input_schema` |
-| `context.user_message` | `string` | The original user message |
-| `context.conversation_history` | `array` | Prior turns in this session |
+| Field                          | Type            | Description                                    |
+| ------------------------------ | --------------- | ---------------------------------------------- |
+| `session_id`                   | `string (UUID)` | Marketplace session identifier                 |
+| `command`                      | `string`        | Action name from `/capabilities`               |
+| `arguments`                    | `object`        | Arguments matching the action's `input_schema` |
+| `context.user_message`         | `string`        | The original user message                      |
+| `context.conversation_history` | `array`         | Prior turns in this session                    |
 
 ## Response format
 
@@ -82,7 +87,9 @@ async def invoke(body: dict, x_orchestrator_key: str = Header(...)):
 ```
 
 <Callout type="warning" title="Key rotation">
-  Your `ORCHESTRATOR_API_KEY` is set in your environment at deployment time. It's issued once when your agent is approved. If you believe the key was compromised, contact support — there is no self-service rotation yet.
+  Your `ORCHESTRATOR_API_KEY` is set in your environment at deployment time. It's issued once when
+  your agent is approved. If you believe the key was compromised, contact support — there is no
+  self-service rotation yet.
 </Callout>
 
 ## Timeouts

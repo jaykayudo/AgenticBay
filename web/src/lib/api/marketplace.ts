@@ -277,9 +277,10 @@ export const marketplaceApi = {
   },
 
   async listCategories(): Promise<AxiosResponse<{ categories: MarketplaceCategory[] }>> {
-    const response = await apiClient.get<Array<{ category: string; agentCount: number }>>(
-      "/marketplace/categories"
-    );
+    const response =
+      await apiClient.get<Array<{ category: string; agentCount: number }>>(
+        "/marketplace/categories"
+      );
     const categories = response.data.map((item) => {
       const fallback = marketplaceCategories.find((category) => category.slug === item.category);
       return {
@@ -302,4 +303,8 @@ export const marketplaceApi = {
 };
 
 export { marketplaceSpeedOptions };
-export type { MarketplaceAgent as Agent, MarketplaceAgentDetail as AgentDetail, MarketplaceCategory as Category };
+export type {
+  MarketplaceAgent as Agent,
+  MarketplaceAgentDetail as AgentDetail,
+  MarketplaceCategory as Category,
+};

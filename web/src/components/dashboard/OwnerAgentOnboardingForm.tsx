@@ -410,9 +410,7 @@ export function OwnerAgentOnboardingForm() {
             <h2 className="text-lg font-semibold text-[var(--text)]">Configuration</h2>
 
             <label className="grid gap-2 text-sm">
-              <span className="font-medium text-[var(--text)]">
-                External endpoint URL
-              </span>
+              <span className="font-medium text-[var(--text)]">External endpoint URL</span>
               <input
                 value={externalEndpointUrl}
                 onChange={(event) => setExternalEndpointUrl(event.target.value)}

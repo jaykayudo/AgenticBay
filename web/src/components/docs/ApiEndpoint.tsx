@@ -21,12 +21,7 @@ const authLabels: Record<string, string> = {
   none: "Public",
 };
 
-export function ApiEndpoint({
-  method,
-  path,
-  auth,
-  description,
-}: ApiEndpointProps) {
+export function ApiEndpoint({ method, path, auth, description }: ApiEndpointProps) {
   return (
     <div className="my-4 rounded-lg border border-border bg-muted/20 p-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -42,9 +37,7 @@ export function ApiEndpoint({
           </span>
         )}
       </div>
-      {description && (
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-      )}
+      {description && <p className="mt-2 text-sm text-muted-foreground">{description}</p>}
     </div>
   );
 }

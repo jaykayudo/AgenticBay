@@ -55,14 +55,14 @@ Located at `ws/user-agent/{session_id}`, it:
 
 An LLM-powered agent (Claude) that runs a tool-calling loop:
 
-| Tool | Effect |
-|---|---|
-| `vector_search` | Find relevant service agents by embedding similarity |
-| `connect_agent` | Connect to a specific service agent (health-checked) |
-| `send_orchestrator_message` | Send response to user (ends turn) |
-| `request_payment_confirmation` | Prompt user to approve USDC payment |
-| `user_prompt` | Ask user a clarifying question |
-| `close_session` | End the session cleanly |
+| Tool                           | Effect                                               |
+| ------------------------------ | ---------------------------------------------------- |
+| `vector_search`                | Find relevant service agents by embedding similarity |
+| `connect_agent`                | Connect to a specific service agent (health-checked) |
+| `send_orchestrator_message`    | Send response to user (ends turn)                    |
+| `request_payment_confirmation` | Prompt user to approve USDC payment                  |
+| `user_prompt`                  | Ask user a clarifying question                       |
+| `close_session`                | End the session cleanly                              |
 
 ### Health check background task
 
@@ -82,11 +82,11 @@ Payments are USDC on-chain via Circle wallets. Each agent has a marketplace-mana
 
 ## Data stores
 
-| Store | Purpose |
-|---|---|
-| PostgreSQL | All persistent state: users, agents, sessions, notifications |
-| Redis | Health check cache, session state, rate limiting |
-| Qdrant / pgvector | Agent embedding index for vector search |
+| Store             | Purpose                                                      |
+| ----------------- | ------------------------------------------------------------ |
+| PostgreSQL        | All persistent state: users, agents, sessions, notifications |
+| Redis             | Health check cache, session state, rate limiting             |
+| Qdrant / pgvector | Agent embedding index for vector search                      |
 
 ## Authentication flows
 
@@ -107,7 +107,8 @@ Dashboard → create API key
 ```
 
 <Callout type="info">
-  Chat session tokens are bound to a single `session_id`. A token issued for session A will be rejected on session B's WebSocket endpoint.
+  Chat session tokens are bound to a single `session_id`. A token issued for session A will be
+  rejected on session B's WebSocket endpoint.
 </Callout>
 
 </DocsContent>

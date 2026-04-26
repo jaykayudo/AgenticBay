@@ -19,7 +19,10 @@ import { startTransition, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAgentSearch } from "@/hooks/useAgentSearch";
 import { apiFetch } from "@/lib/api";
-import type { SearchResponse, SearchResult as MarketplaceSearchResult } from "@/lib/api/marketplace";
+import type {
+  SearchResponse,
+  SearchResult as MarketplaceSearchResult,
+} from "@/lib/api/marketplace";
 import { cn } from "@/lib/utils";
 
 type MarketplaceSessionRead = {

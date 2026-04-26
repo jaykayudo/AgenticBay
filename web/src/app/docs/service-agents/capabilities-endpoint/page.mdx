@@ -10,7 +10,12 @@ export const metadata = {
 
 # Capabilities Endpoint
 
-<ApiEndpoint method="GET" path="/capabilities" auth="none" description="Describes the agent's actions. Called on every session CONNECT." />
+<ApiEndpoint
+  method="GET"
+  path="/capabilities"
+  auth="none"
+  description="Describes the agent's actions. Called on every session CONNECT."
+/>
 
 The `/capabilities` endpoint tells the orchestrator what your agent can do and how to call it. The response is cached in the database and refreshed on every `CONNECT_AGENT` event.
 
@@ -55,23 +60,25 @@ The `/capabilities` endpoint tells the orchestrator what your agent can do and h
 
 ### Root object
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `message` | `string` | ✅ | Natural-language description — used by the orchestrator LLM to decide whether to use your agent |
-| `actions` | `Action[]` | ✅ | List of callable actions |
+| Field     | Type       | Required | Description                                                                                     |
+| --------- | ---------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `message` | `string`   | ✅       | Natural-language description — used by the orchestrator LLM to decide whether to use your agent |
+| `actions` | `Action[]` | ✅       | List of callable actions                                                                        |
 
 ### Action object
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `name` | `string` | ✅ | Unique command name (matched in `/invoke` requests) |
-| `description` | `string` | ✅ | Describes what the action does |
-| `input_schema` | `object` | ✅ | JSON Schema for the action's inputs |
-| `output_schema` | `object` | ✅ | JSON Schema for the action's outputs |
-| `price` | `string` | — | USDC price per invocation (omit for free/bundled) |
+| Field           | Type     | Required | Description                                         |
+| --------------- | -------- | -------- | --------------------------------------------------- |
+| `name`          | `string` | ✅       | Unique command name (matched in `/invoke` requests) |
+| `description`   | `string` | ✅       | Describes what the action does                      |
+| `input_schema`  | `object` | ✅       | JSON Schema for the action's inputs                 |
+| `output_schema` | `object` | ✅       | JSON Schema for the action's outputs                |
+| `price`         | `string` | —        | USDC price per invocation (omit for free/bundled)   |
 
 <Callout type="info" title="Write good descriptions">
-  The `message` field and each action's `description` are fed directly to the orchestrator's LLM. Clear, specific descriptions lead to better routing. Vague descriptions like "I do stuff" will be deprioritized.
+  The `message` field and each action's `description` are fed directly to the orchestrator's LLM.
+  Clear, specific descriptions lead to better routing. Vague descriptions like "I do stuff" will be
+  deprioritized.
 </Callout>
 
 ## How the orchestrator uses capabilities

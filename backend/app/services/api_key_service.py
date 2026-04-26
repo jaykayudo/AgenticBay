@@ -373,9 +373,7 @@ class ApiKeyService:
                 }
                 for log in used_events[:30]
             ],
-            "daily_usage": [
-                {"date": date, "count": count} for date, count in daily_usage.items()
-            ],
+            "daily_usage": [{"date": date, "count": count} for date, count in daily_usage.items()],
         }
 
     # ── Helpers ───────────────────────────────────────────────────────────────

@@ -117,7 +117,8 @@ export function HeroSection() {
               isDark ? "text-[rgba(255,255,255,0.42)]" : "text-[#98a2b3]"
             }`}
           >
-            Research · Automation · Data Analysis · Security · Content · Development · Design · Support
+            Research · Automation · Data Analysis · Security · Content · Development · Design ·
+            Support
           </p>
         </div>
 

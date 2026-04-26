@@ -239,7 +239,13 @@ export default function AgentAnalyticsPage() {
           successRate: data.successRate,
           avgJobValue,
         },
-        revenueSeries: [{ label: rangeTabs.find((tab) => tab.value === deferredRange)?.label ?? "Range", amount: totalEarned, jobs: totalJobs }],
+        revenueSeries: [
+          {
+            label: rangeTabs.find((tab) => tab.value === deferredRange)?.label ?? "Range",
+            amount: totalEarned,
+            jobs: totalJobs,
+          },
+        ],
         actionBreakdown: [
           {
             action: "All actions",

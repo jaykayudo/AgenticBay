@@ -1270,7 +1270,6 @@ export function JobSessionPage({ sessionId }: { sessionId: string }) {
         clearMockTimers();
       };
     }
-
   }, [
     appendFeed,
     appendLog,

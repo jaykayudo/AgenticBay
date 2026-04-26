@@ -19,12 +19,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.agents.orchestrator.schema import SessionPhase
 from tests.test_orchestrator_agent.conftest import (
     FakeSessionStore,
     build_orchestrator,
     make_state,
 )
-from app.agents.orchestrator.schema import SessionPhase
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -109,10 +109,12 @@ async def test_payment_message_creates_invoice_and_sends_payment_response() -> N
     mock_manager = MagicMock()
     mock_manager.send_to_user = AsyncMock()
 
-    msg = json.dumps({
-        "type": "PAYMENT",
-        "data": {"amount": "20.0", "description": "job charge", "address": None},
-    })
+    msg = json.dumps(
+        {
+            "type": "PAYMENT",
+            "data": {"amount": "20.0", "description": "job charge", "address": None},
+        }
+    )
     with patch("app.agents.orchestrator.agent.session_manager", mock_manager):
         await orch.handle_service_message(state.session_id, msg)
 
@@ -141,10 +143,12 @@ async def test_payment_message_sent_to_correct_session() -> None:
     mock_manager = MagicMock()
     mock_manager.send_to_user = AsyncMock()
 
-    msg = json.dumps({
-        "type": "PAYMENT",
-        "data": {"amount": "5.0", "description": "fee", "address": None},
-    })
+    msg = json.dumps(
+        {
+            "type": "PAYMENT",
+            "data": {"amount": "5.0", "description": "fee", "address": None},
+        }
+    )
     with patch("app.agents.orchestrator.agent.session_manager", mock_manager):
         await orch.handle_service_message(state.session_id, msg)
 
@@ -164,10 +168,12 @@ async def test_job_done_sends_close_appeal_to_user() -> None:
     mock_manager = MagicMock()
     mock_manager.send_to_user = AsyncMock()
 
-    msg = json.dumps({
-        "type": "JOB_DONE",
-        "data": {"message": "Task complete!", "details": {"output": "result.csv"}},
-    })
+    msg = json.dumps(
+        {
+            "type": "JOB_DONE",
+            "data": {"message": "Task complete!", "details": {"output": "result.csv"}},
+        }
+    )
     with patch("app.agents.orchestrator.agent.session_manager", mock_manager):
         await orch.handle_service_message(state.session_id, msg)
 
@@ -185,10 +191,12 @@ async def test_job_done_includes_message_and_details() -> None:
     mock_manager = MagicMock()
     mock_manager.send_to_user = AsyncMock()
 
-    msg = json.dumps({
-        "type": "JOB_DONE",
-        "data": {"message": "Done!", "details": {"rows": 42}},
-    })
+    msg = json.dumps(
+        {
+            "type": "JOB_DONE",
+            "data": {"message": "Done!", "details": {"rows": 42}},
+        }
+    )
     with patch("app.agents.orchestrator.agent.session_manager", mock_manager):
         await orch.handle_service_message(state.session_id, msg)
 

@@ -16,9 +16,24 @@ A service agent is any HTTP server you build and host that implements the Agenti
 
 Your server must expose three endpoints:
 
-<ApiEndpoint method="GET" path="/health" auth="none" description="Liveness + readiness probe. Called every 60s by the platform." />
-<ApiEndpoint method="GET" path="/capabilities" auth="none" description="Describes what your agent can do. Called on every session connect." />
-<ApiEndpoint method="POST" path="/invoke" auth="bearer" description="Execute a task. The main entry point for user requests." />
+<ApiEndpoint
+  method="GET"
+  path="/health"
+  auth="none"
+  description="Liveness + readiness probe. Called every 60s by the platform."
+/>
+<ApiEndpoint
+  method="GET"
+  path="/capabilities"
+  auth="none"
+  description="Describes what your agent can do. Called on every session connect."
+/>
+<ApiEndpoint
+  method="POST"
+  path="/invoke"
+  auth="bearer"
+  description="Execute a task. The main entry point for user requests."
+/>
 
 All three must be available at the **Base URL** you register.
 

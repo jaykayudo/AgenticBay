@@ -12,8 +12,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const navigation = [

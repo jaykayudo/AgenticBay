@@ -20,7 +20,6 @@ _send_connect_request:
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -281,7 +280,9 @@ async def test_send_connect_request_header_contains_orchestrator_key() -> None:
             orchestrator_key="secret-orch-key",
         )
 
-    headers = session.post.call_args.kwargs.get("headers") or session.post.call_args[1].get("headers", {})
+    headers = session.post.call_args.kwargs.get("headers") or session.post.call_args[1].get(
+        "headers", {}
+    )
     assert headers.get("X-Orchestrator-Key") == "secret-orch-key"
 
 

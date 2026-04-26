@@ -11,9 +11,8 @@ import {
 import { connectNotificationsSocket } from "@/lib/ws/notificationsSocket";
 
 export function useNotifications(page = 1) {
-  const { data, error, isLoading, mutate } = useSWR(
-    ["/notifications", page],
-    () => notificationsApi.list(page).then((response) => response.data)
+  const { data, error, isLoading, mutate } = useSWR(["/notifications", page], () =>
+    notificationsApi.list(page).then((response) => response.data)
   );
 
   const { data: countData, mutate: mutateCount } = useSWR("/notifications/unread-count", () =>
@@ -95,23 +94,21 @@ export function useNotifications(page = 1) {
 
   const markAllRead = async () => {
     await notificationsApi.markAllRead();
-    await mutate(
-      (current) => {
-        if (!current) {
-          return current;
-        }
-
-        return {
-          ...current,
-          items: current.items.map((item) => ({
-            ...item,
-            isRead: true,
-            readAt: item.readAt ?? new Date().toISOString(),
-          })),
-          unreadCount: 0,
-        };
+    await mutate((current) => {
+      if (!current) {
+        return current;
       }
-    );
+
+      return {
+        ...current,
+        items: current.items.map((item) => ({
+          ...item,
+          isRead: true,
+          readAt: item.readAt ?? new Date().toISOString(),
+        })),
+        unreadCount: 0,
+      };
+    });
     await mutateCount({ count: 0 }, { revalidate: true });
   };
 

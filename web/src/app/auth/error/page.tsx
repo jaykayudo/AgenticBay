@@ -13,8 +13,7 @@ type AuthErrorPageProps = {
 
 export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
   const params = await searchParams;
-  const errorType =
-    typeof params.error_type === "string" ? params.error_type : "oauth_failed";
+  const errorType = typeof params.error_type === "string" ? params.error_type : "oauth_failed";
   const message =
     ERROR_MESSAGES[errorType] ??
     (errorType.startsWith("oauth_")

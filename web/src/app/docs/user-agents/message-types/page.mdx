@@ -12,16 +12,16 @@ Complete reference for every WebSocket message type used in the orchestrator pro
 
 ## Summary table
 
-| Type | Direction | Description |
-|---|---|---|
-| `USER_MESSAGE` | Client → Server | User's text input |
-| `CANCEL_SESSION` | Client → Server | Graceful session end |
-| `PAYMENT_RESPONSE` | Client → Server | Approve/decline payment |
-| `AGENT_MESSAGE` | Server → Client | Orchestrator or agent text reply |
-| `PAYMENT_REQUEST` | Server → Client | Payment approval required |
-| `PAYMENT_SUCCESSFUL` | Server → Client | Payment confirmed |
-| `SESSION_CLOSED` | Server → Client | Session has ended |
-| `ERROR` | Server → Client | Recoverable or fatal error |
+| Type                 | Direction       | Description                      |
+| -------------------- | --------------- | -------------------------------- |
+| `USER_MESSAGE`       | Client → Server | User's text input                |
+| `CANCEL_SESSION`     | Client → Server | Graceful session end             |
+| `PAYMENT_RESPONSE`   | Client → Server | Approve/decline payment          |
+| `AGENT_MESSAGE`      | Server → Client | Orchestrator or agent text reply |
+| `PAYMENT_REQUEST`    | Server → Client | Payment approval required        |
+| `PAYMENT_SUCCESSFUL` | Server → Client | Payment confirmed                |
+| `SESSION_CLOSED`     | Server → Client | Session has ended                |
+| `ERROR`              | Server → Client | Recoverable or fatal error       |
 
 ## CLIENT → SERVER
 
@@ -65,8 +65,8 @@ interface AgentMessage {
   type: "AGENT_MESSAGE";
   data: {
     content: string;
-    agent_id?: string;    // UUID of the connected service agent
-    agent_name?: string;  // Display name
+    agent_id?: string; // UUID of the connected service agent
+    agent_name?: string; // Display name
   };
 }
 ```
@@ -77,10 +77,10 @@ interface AgentMessage {
 interface PaymentRequest {
   type: "PAYMENT_REQUEST";
   data: {
-    amount_usdc: string;    // e.g. "0.05"
+    amount_usdc: string; // e.g. "0.05"
     agent_name: string;
-    action: string;         // action name from capabilities
-    description: string;    // human-readable cost explanation
+    action: string; // action name from capabilities
+    description: string; // human-readable cost explanation
   };
 }
 ```
