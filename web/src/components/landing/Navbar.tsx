@@ -13,6 +13,7 @@ const navLinks = [
   { href: "#how-it-works", label: "How it Works" },
   { href: "#featured-agents", label: "Agents" },
   { href: "/marketplace", label: "Explore Agents", isRoute: true },
+  { href: "/docs", label: "Docs", isRoute: true },
 ];
 
 export function Navbar() {

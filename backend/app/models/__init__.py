@@ -1,3 +1,4 @@
+from app.models.agent import RegisteredAgent
 from app.models.agents import Agent, AgentAction, AgentHostingType, AgentStatus
 from app.models.analytics import AgentAnalytic, AnalyticPeriod
 from app.models.api_keys import ApiKey, ApiKeyEnvironment
@@ -48,6 +49,7 @@ __all__ = [
     "TransactionType",
     "TransactionStatus",
     # Agents
+    "RegisteredAgent",
     "Agent",
     "AgentAction",
     "AgentStatus",

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Literal
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,20 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
     DATABASE_URL_SYNC: str
+
+    @field_validator("DATABASE_URL", mode="after")
+    @classmethod
+    def normalize_asyncpg_url(cls, v: str) -> str:
+        """Translate common libpq params to asyncpg-compatible params."""
+        if not v.startswith("postgresql+asyncpg://"):
+            return v
+
+        parsed = urlsplit(v)
+        query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+        sslmode = query.pop("sslmode", None)
+        if sslmode and "ssl" not in query:
+            query["ssl"] = sslmode
+        return urlunsplit(parsed._replace(query=urlencode(query)))
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
