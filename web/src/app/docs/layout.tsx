@@ -1,11 +1,11 @@
+import { BookOpen } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
 
+import { DocsMobileNav } from "@/components/docs/DocsMobileNav";
+import { DocsSearch } from "@/components/docs/DocsSearch";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { DocsTOC } from "@/components/docs/DocsTOC";
-import { DocsSearch } from "@/components/docs/DocsSearch";
-import { DocsMobileNav } from "@/components/docs/DocsMobileNav";
 
 export const metadata: Metadata = {
   title: {
