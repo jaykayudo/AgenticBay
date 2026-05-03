@@ -20,6 +20,7 @@ dependencies = [
     { name = "anyio" },
     { name = "asyncpg" },
     { name = "bcrypt" },
+    { name = "circle-developer-controlled-wallets" },
     { name = "fastapi", extra = ["standard"] },
     { name = "greenlet" },
     { name = "httpx" },
@@ -72,6 +73,7 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.4.0" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "bcrypt", specifier = ">=4.0,<5.0" },
+    { name = "circle-developer-controlled-wallets", specifier = ">=9.3.3" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.0" },
     { name = "greenlet", specifier = ">=3.0.0" },
     { name = "httpx", specifier = ">=0.27.0" },
@@ -678,6 +680,45 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/de/32/d92444ad05c7a6e41fb2036749777c163baf7a0301a040cb672d6b2b1ae9/charset_normalizer-3.4.7-cp314-cp314t-win_arm64.whl", hash = "sha256:c35abb8bfff0185efac5878da64c45dafd2b37fb0383add1be155a763c1f083d", size = 153018, upload-time = "2026-04-02T09:27:51.116Z" },
     { url = "https://files.pythonhosted.org/packages/db/8f/61959034484a4a7c527811f4721e75d02d653a35afb0b6054474d8185d4c/charset_normalizer-3.4.7-py3-none-any.whl", hash = "sha256:3dce51d0f5e7951f8bb4900c257dad282f49190fdbebecd4ba99bcc41fef404d", size = 61958, upload-time = "2026-04-02T09:28:37.794Z" },
 ]
+
+[[package]]
+name = "circle-configurations"
+version = "9.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "lazy-imports" },
+    { name = "pycryptodome" },
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/82/b4/61c02b0db185bd9297afcb71fc7605e8851586b3c6ead703e10bfe9791c3/circle_configurations-9.3.3.tar.gz", hash = "sha256:0835cd45e24840c9c458d4f4ac354edbc26f3b1f949baa998b5137997a2697c4", size = 37089, upload-time = "2026-04-30T08:28:14.168Z" }
+
+[[package]]
+name = "circle-developer-controlled-wallets"
+version = "9.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "circle-configurations" },
+    { name = "circle-web3-sdk-util" },
+    { name = "lazy-imports" },
+    { name = "pycryptodome" },
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d3/5a/72d8b1d8eddd4fb6c917f2e0ee2a15a7d4060b60c4ea5ff0451d1710b374/circle_developer_controlled_wallets-9.3.3.tar.gz", hash = "sha256:d413fa632a21d34f103f406d659ca17fe5db4e1dd6651a7f9d993469a3d31157", size = 85462, upload-time = "2026-04-30T08:28:15.126Z" }
+
+[[package]]
+name = "circle-web3-sdk-util"
+version = "9.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pycryptodome" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a5/5f/be52d2d45ed4443e242d42e5f169ca4659d63062c8f7b0659ba06eee39fd/circle_web3_sdk_util-9.3.3.tar.gz", hash = "sha256:3fc57d1ec74e3be8f93d82c581f3aa03737915eba07ed0a80ed9203b2c49b678", size = 747358, upload-time = "2026-04-30T08:28:12.457Z" }
 
 [[package]]
 name = "ckzg"
@@ -2006,6 +2047,15 @@ wheels = [
 ]
 
 [[package]]
+name = "lazy-imports"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/67/04432aae0c1e2729bff14e1841f4a3fb63a9e354318e66622251487760c3/lazy_imports-1.2.0.tar.gz", hash = "sha256:3c546b3c1e7c4bf62a07f897f6179d9feda6118e71ef6ecc47a339cab3d2e2d9", size = 24470, upload-time = "2025-12-28T13:51:51.218Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/62/60ed24fa8707f10c1c5aef94791252b820be3dd6bdfc6e2fcdb08bc8912f/lazy_imports-1.2.0-py3-none-any.whl", hash = "sha256:97134d6552e2ba16f1a278e316f05313ab73b360e848e40d593d08a5c2406fdf", size = 18681, upload-time = "2025-12-28T13:51:49.802Z" },
+]
+
+[[package]]
 name = "librt"
 version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3059,6 +3109,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b1/51/a849f96e117386044471c8ec2bd6cfebacda285da9525c9106aeb28da671/pytest_cov-7.1.0.tar.gz", hash = "sha256:30674f2b5f6351aa09702a9c8c364f6a01c27aae0c1366ae8016160d1efc56b2", size = 55592, upload-time = "2026-03-21T20:11:16.284Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9d/7a/d968e294073affff457b041c2be9868a40c1c71f4a35fcc1e45e5493067b/pytest_cov-7.1.0-py3-none-any.whl", hash = "sha256:a0461110b7865f9a271aa1b51e516c9a95de9d696734a2f71e3e78f46e1d4678", size = 22876, upload-time = "2026-03-21T20:11:14.438Z" },
+]
+
+[[package]]
+name = "python-dateutil"
+version = "2.9.0.post0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
 ]
 
 [[package]]
