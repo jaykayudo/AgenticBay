@@ -19,7 +19,7 @@ from app.models.jobs import Job
 from app.models.notifications import Notification, NotificationType
 from app.models.users import User
 from app.models.wallets import TransactionStatus, TransactionType, WalletTransaction
-from app.services.circle_client import CircleClient
+from app.services.payment_gateway import PaymentGateway, get_payment_gateway
 
 
 class WalletServiceError(Exception):
@@ -27,7 +27,7 @@ class WalletServiceError(Exception):
 
 
 class WalletProvisionError(WalletServiceError):
-    """Raised when a Circle wallet cannot be provisioned."""
+    """Raised when a wallet cannot be provisioned via the payment gateway."""
 
 
 class InsufficientBalanceError(WalletServiceError):
@@ -57,22 +57,25 @@ class TransactionListResult:
 
 
 class WalletService:
-    def __init__(self, db: AsyncSession, *, circle: CircleClient | None = None) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        *,
+        gateway: PaymentGateway | None = None,
+    ) -> None:
         self.db = db
-        self.circle = circle or CircleClient()
+        self.gateway: PaymentGateway = gateway or get_payment_gateway()
 
     async def ensure_user_wallet(self, user: User) -> User:
         if user.circle_wallet_id and user.wallet_address:
             return user
 
-        wallet = await self.circle.create_developer_wallet(name=f"User Wallet {user.id}")
-        wallet_id = str(wallet.get("id") or "")
-        address = str(wallet.get("address") or "")
-        if not wallet_id or not address:
-            raise WalletProvisionError("Circle did not return a usable wallet.")
+        wallet_info = await self.gateway.create_wallet(name=f"User Wallet {user.id}")
+        if not wallet_info.wallet_id or not wallet_info.address:
+            raise WalletProvisionError("Payment gateway did not return a usable wallet.")
 
-        user.circle_wallet_id = wallet_id
-        user.wallet_address = address
+        user.circle_wallet_id = wallet_info.wallet_id
+        user.wallet_address = wallet_info.address
         await self.db.flush()
         await self.db.commit()
         await self.db.refresh(user)
@@ -80,7 +83,7 @@ class WalletService:
 
     async def get_live_balance(self, user: User) -> Decimal:
         user = await self.ensure_user_wallet(user)
-        balance = Decimal(str(await self.circle.get_wallet_balance(str(user.circle_wallet_id))))
+        balance = Decimal(str(await self.gateway.get_balance(str(user.circle_wallet_id))))
         await self._trigger_low_balance_notification(user, balance)
         return balance
 
@@ -97,7 +100,15 @@ class WalletService:
 
     async def initiate_deposit(self, user: User) -> dict[str, Any]:
         user = await self.ensure_user_wallet(user)
-        return await self.circle.get_deposit_instructions(str(user.circle_wallet_id))
+        instructions = await self.gateway.get_deposit_instructions(str(user.circle_wallet_id))
+        return {
+            "walletId": instructions.wallet_id,
+            "address": instructions.address,
+            "blockchain": instructions.blockchain,
+            "currency": instructions.currency,
+            "instructions": instructions.instructions,
+            "qrData": f"{instructions.blockchain}:{instructions.address}?asset=USDC",
+        }
 
     async def initiate_withdrawal(
         self,
@@ -129,17 +140,20 @@ class WalletService:
         self.db.add(local_tx)
         await self.db.flush()
 
-        circle_tx = await self.circle.create_withdrawal(
+        transfer = await self.gateway.create_transfer(
             from_wallet_id=str(user.circle_wallet_id),
             to_address=to_address,
-            amount=amount,
+            amount=float(amount),
             blockchain=blockchain,
             idempotency_key=str(local_tx.id),
         )
-        local_tx.circle_transfer_id = str(circle_tx.get("id") or "")
-        local_tx.status = self._status_from_circle_state(str(circle_tx.get("state") or "PENDING"))
-        local_tx.onchain_tx_hash = self._extract_tx_hash(circle_tx)
-        local_tx.tx_metadata = {**local_tx.tx_metadata, "circleTransaction": circle_tx}
+        local_tx.circle_transfer_id = transfer.transfer_id
+        local_tx.status = self._status_from_circle_state(transfer.state)
+        local_tx.onchain_tx_hash = transfer.tx_hash
+        local_tx.tx_metadata = {
+            **local_tx.tx_metadata,
+            "transfer": {"id": transfer.transfer_id, "state": transfer.state},
+        }
 
         await self.db.commit()
         await self.db.refresh(local_tx)

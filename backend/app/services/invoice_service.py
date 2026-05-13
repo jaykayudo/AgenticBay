@@ -13,8 +13,8 @@ from app.core.database import AsyncSessionLocal
 from app.models.invoices import Invoice, InvoiceStatus
 from app.models.wallets import EscrowWallet
 from app.repositories.invoice_repo import InvoiceRepository
-from app.services.circle_client import CircleClient
 from app.services.escrow_wallet_service import EscrowWalletService
+from app.services.payment_gateway import PaymentGateway, get_payment_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +23,8 @@ INVOICE_EXPIRY_MINUTES = 30
 
 class InvoiceService:
     def __init__(self) -> None:
-        self.circle = CircleClient()
-        self.escrow = EscrowWalletService(self.circle)
+        self.gateway: PaymentGateway = get_payment_gateway()
+        self.escrow = EscrowWalletService(self.gateway)
 
     # ─────────────────────────────────────────────────
     # Creation
@@ -187,7 +187,7 @@ class InvoiceService:
                 invoice.id,
                 payment_transaction_id=tx_id,
                 payment_tx_hash=tx_hash,
-                payment_tx_url=CircleClient.get_explorer_url(tx_hash, blockchain),
+                payment_tx_url=PaymentGateway.get_explorer_url(tx_hash, blockchain),
                 payer_wallet_address=str(transaction.get("sourceAddress", "")),
             )
             await session.commit()
@@ -232,31 +232,31 @@ class InvoiceService:
 
         try:
             # 1 — Transfer to service agent
-            agent_tx = await self.circle.create_transfer(
+            agent_tx = await self.gateway.create_transfer(
                 from_wallet_id=wallet.circle_wallet_id,
                 to_address=str(invoice.payee_wallet_address or ""),
                 amount=float(invoice.agent_payout),
                 idempotency_key=f"agent-{invoice_id}",
             )
-            agent_tx = await self.circle.wait_for_transfer_completion(agent_tx["id"])
+            agent_tx = await self.gateway.wait_for_transfer(agent_tx.transfer_id)
 
             # 2 — Transfer marketplace fee
-            fee_tx = await self.circle.create_transfer(
+            fee_tx = await self.gateway.create_transfer(
                 from_wallet_id=wallet.circle_wallet_id,
                 to_address=settings.MARKETPLACE_WALLET_ADDRESS,
                 amount=float(invoice.marketplace_fee),
                 idempotency_key=f"fee-{invoice_id}",
             )
-            fee_tx = await self.circle.wait_for_transfer_completion(fee_tx["id"])
+            fee_tx = await self.gateway.wait_for_transfer(fee_tx.transfer_id)
 
             async with AsyncSessionLocal() as session:
                 repo = InvoiceRepository(session)
                 await repo.mark_disbursed(
                     invoice_id,
-                    agent_disbursement_tx_id=agent_tx.get("id"),
-                    agent_disbursement_tx_hash=agent_tx.get("txHash"),
-                    fee_disbursement_tx_id=fee_tx.get("id"),
-                    fee_disbursement_tx_hash=fee_tx.get("txHash"),
+                    agent_disbursement_tx_id=agent_tx.transfer_id,
+                    agent_disbursement_tx_hash=agent_tx.tx_hash,
+                    fee_disbursement_tx_id=fee_tx.transfer_id,
+                    fee_disbursement_tx_hash=fee_tx.tx_hash,
                 )
                 await session.commit()
 
@@ -290,19 +290,19 @@ class InvoiceService:
             return False
 
         try:
-            refund_tx = await self.circle.create_transfer(
+            refund_tx = await self.gateway.create_transfer(
                 from_wallet_id=wallet.circle_wallet_id,
                 to_address=payer_address,
                 amount=float(invoice.amount),
                 idempotency_key=f"refund-{invoice_id}",
             )
-            refund_tx = await self.circle.wait_for_transfer_completion(refund_tx["id"])
+            refund_tx = await self.gateway.wait_for_transfer(refund_tx.transfer_id)
 
             async with AsyncSessionLocal() as session:
                 await InvoiceRepository(session).mark_refunded(
                     inv_uuid,
-                    refund_tx_id=refund_tx.get("id"),
-                    refund_tx_hash=refund_tx.get("txHash"),
+                    refund_tx_id=refund_tx.transfer_id,
+                    refund_tx_hash=refund_tx.tx_hash,
                 )
                 await session.commit()
 

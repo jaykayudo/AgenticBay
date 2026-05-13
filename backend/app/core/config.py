@@ -85,6 +85,10 @@ class Settings(BaseSettings):
     CIRCLE_BASE_URL: str = "https://api-sandbox.circle.com"
     # 32-byte hex string — register once with Circle, never changes
     CIRCLE_ENTITY_SECRET: str = ""
+    # RSA public key PEM used to encrypt entity secret ciphertext.
+    # Fetch once from Circle (/v1/w3s/config/entity/publicKey) and store here.
+    # If empty, CircleClient will fetch it automatically on first startup.
+    CIRCLE_PUBLIC_KEY: str = ""
     CIRCLE_WALLET_SET_ID: str = ""
 
     # Marketplace treasury

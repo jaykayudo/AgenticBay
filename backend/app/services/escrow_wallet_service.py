@@ -10,21 +10,26 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.models.wallets import EscrowWallet, EscrowWalletStatus
-from app.services.circle_client import CircleClient
+from app.services.payment_gateway import PaymentGateway
 
 logger = logging.getLogger(__name__)
 
-# Dust threshold: balances below this are considered empty
+# Dust threshold: balances at or below this are considered effectively empty
 _DUST_THRESHOLD = 0.01
 
 
 class EscrowWalletService:
-    def __init__(self, circle: CircleClient) -> None:
-        self.circle = circle
+    """
+    Manages the pool of Circle escrow wallets used to hold payment funds.
 
-    # ─────────────────────────────────────────────────
-    # Pool acquisition
-    # ─────────────────────────────────────────────────
+    Accepts any PaymentGateway implementation — swap Circle for another
+    provider without changing any invoice or orchestrator logic.
+    """
+
+    def __init__(self, gateway: PaymentGateway) -> None:
+        self.gateway = gateway
+
+    # ── Pool acquisition ───────────────────────────────────────────────────────
 
     async def acquire_wallet(self, invoice_id: str) -> EscrowWallet:
         """
@@ -46,11 +51,10 @@ class EscrowWalletService:
                     wallet = result.scalar_one_or_none()
 
                     if wallet is None:
-                        # Pool exhausted — provision a new Circle wallet
                         wallet = await self._provision_new_wallet(session)
                     else:
                         # Safety: confirm the wallet is truly empty before handing it out
-                        balance = await self.circle.get_wallet_balance(wallet.circle_wallet_id)
+                        balance = await self.gateway.get_balance(wallet.circle_wallet_id)
                         if balance > _DUST_THRESHOLD:
                             logger.warning(
                                 "Wallet %s flagged MAINTENANCE — unexpected balance %.6f",
@@ -59,8 +63,7 @@ class EscrowWalletService:
                             )
                             wallet.status = EscrowWalletStatus.MAINTENANCE
                             await session.flush()
-                            # Loop again to find/create another
-                            continue
+                            continue  # loop to find/create another
 
                     wallet.status = EscrowWalletStatus.LOCKED
                     wallet.locked_invoice_id = inv_uuid
@@ -69,17 +72,17 @@ class EscrowWalletService:
                     return wallet
 
     async def _provision_new_wallet(self, session: object) -> EscrowWallet:
-        """Create a fresh Circle wallet and insert it into the DB (locked)."""
+        """Create a fresh gateway wallet and insert it into the DB."""
         from sqlalchemy.ext.asyncio import AsyncSession
 
-        circle_wallet = await self.circle.create_developer_wallet(
-            wallet_set_id=settings.CIRCLE_WALLET_SET_ID,
+        wallet_info = await self.gateway.create_wallet(
+            name="Escrow Wallet",
             blockchain=settings.BLOCKCHAIN,
         )
         wallet = EscrowWallet(
-            circle_wallet_id=circle_wallet["id"],
+            circle_wallet_id=wallet_info.wallet_id,
             circle_wallet_set_id=settings.CIRCLE_WALLET_SET_ID,
-            wallet_address=circle_wallet["address"],
+            wallet_address=wallet_info.address,
             blockchain=settings.BLOCKCHAIN,
             status=EscrowWalletStatus.AVAILABLE,  # acquire_wallet will lock it after
         )
@@ -88,9 +91,7 @@ class EscrowWalletService:
         await session.flush()
         return wallet
 
-    # ─────────────────────────────────────────────────
-    # Pool release
-    # ─────────────────────────────────────────────────
+    # ── Pool release ───────────────────────────────────────────────────────────
 
     async def release_wallet(self, wallet_id: str) -> bool:
         """
@@ -103,7 +104,7 @@ class EscrowWalletService:
             if wallet is None:
                 return False
 
-            balance = await self.circle.get_wallet_balance(wallet.circle_wallet_id)
+            balance = await self.gateway.get_balance(wallet.circle_wallet_id)
             if balance > _DUST_THRESHOLD:
                 logger.warning(
                     "Wallet %s cannot be released — balance %.6f > dust threshold",
@@ -120,46 +121,42 @@ class EscrowWalletService:
             await session.commit()
             return wallet.status == EscrowWalletStatus.AVAILABLE
 
-    # ─────────────────────────────────────────────────
-    # Payment verification
-    # ─────────────────────────────────────────────────
+    # ── Payment verification ───────────────────────────────────────────────────
 
     async def verify_payment_received(
-        self, circle_wallet_id: str, expected_amount: float
+        self,
+        circle_wallet_id: str,
+        expected_amount: float,
     ) -> dict[str, object] | None:
         """
         Confirm the escrow wallet has received at least expected_amount USDC.
         Returns transaction details if confirmed, else None.
         """
-        balance = await self.circle.get_wallet_balance(circle_wallet_id)
+        balance = await self.gateway.get_balance(circle_wallet_id)
         if balance < expected_amount:
             return None
 
         # Find the inbound transaction that brought the funds in
-        txns = await self.circle.get_wallet_transactions(circle_wallet_id, page_size=10)
+        txns = await self.gateway.get_wallet_transactions(circle_wallet_id, page_size=10)
         for txn in txns:
-            if txn.get("transactionType") not in ("INBOUND", "TRANSFER"):
+            if txn.direction not in ("INBOUND", "TRANSFER"):
                 continue
-            txn_amounts: list[dict[str, object]] = txn.get("amounts", [])
-            for amt_entry in txn_amounts:
-                if float(str(amt_entry.get("amount", "0"))) >= expected_amount:
-                    tx_hash: str = str(txn.get("txHash", ""))
-                    blockchain: str = str(txn.get("blockchain", settings.BLOCKCHAIN))
-                    return {
-                        "transaction_id": str(txn.get("id", "")),
-                        "tx_hash": tx_hash,
-                        "tx_url": CircleClient.get_explorer_url(tx_hash, blockchain),
-                        "amount": float(str(amt_entry.get("amount", "0"))),
-                        "from_address": str(txn.get("sourceAddress", "")),
-                        "confirmed_at": str(txn.get("updateDate", "")),
-                    }
+            if txn.amount >= expected_amount:
+                tx_hash = txn.tx_hash or ""
+                blockchain = txn.blockchain or settings.BLOCKCHAIN
+                return {
+                    "transaction_id": txn.transaction_id,
+                    "tx_hash": tx_hash,
+                    "tx_url": PaymentGateway.get_explorer_url(tx_hash, blockchain),
+                    "amount": txn.amount,
+                    "from_address": txn.from_address or "",
+                    "confirmed_at": txn.timestamp or "",
+                }
 
         # Balance confirmed but no matching transaction found yet (rare race)
         return None
 
-    # ─────────────────────────────────────────────────
-    # Balance sync (for background task)
-    # ─────────────────────────────────────────────────
+    # ── Balance sync (for background task) ────────────────────────────────────
 
     async def sync_all_balances(self) -> None:
         """Refresh current_balance on every wallet in the pool."""
@@ -169,7 +166,7 @@ class EscrowWalletService:
 
         for wallet in wallets:
             try:
-                balance = await self.circle.get_wallet_balance(wallet.circle_wallet_id)
+                balance = await self.gateway.get_balance(wallet.circle_wallet_id)
                 async with AsyncSessionLocal() as session:
                     w = await session.get(EscrowWallet, wallet.id)
                     if w:
